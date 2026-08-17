@@ -119,7 +119,7 @@ export default function AddGradedAssetScreen({
   return (
     <View style={s.container}>
       <VaultHeader title={current ? "Edit Graded Card" : "Add Graded Card"} goBack={goBack} />
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {!card ? (
           <>
             <Field
@@ -189,7 +189,7 @@ export default function AddGradedAssetScreen({
 }
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: 24, paddingBottom: 48 },
+  content: { paddingHorizontal: 20, paddingBottom: 140 },
   eyebrow: {
     color: colors.purple,
     fontSize: 9,
@@ -204,18 +204,18 @@ const s = StyleSheet.create({
     marginTop: 14,
     marginBottom: 20,
   },
-  field: { marginTop: 16 },
+  field: { marginTop: 18 },
   half: { flex: 1 },
   two: { flexDirection: "row", gap: 12 },
   label: {
     color: colors.textTertiary,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1.2,
     marginBottom: 7,
   },
   input: {
-    minHeight: 42,
+    minHeight: 48,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -223,6 +223,7 @@ const s = StyleSheet.create({
     color: colors.text,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    fontSize: 14,
   },
   result: {
     flexDirection: "row",
@@ -231,21 +232,21 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: colors.border,
   },
-  resultImage: { width: 42, height: 58, borderRadius: 5, marginRight: 12 },
-  resultName: { color: colors.text, fontSize: 13, fontWeight: "600" },
-  resultMeta: { color: colors.textSecondary, fontSize: 8, marginTop: 4 },
+  resultImage: { width: 52, height: 72, borderRadius: 7, marginRight: 14 },
+  resultName: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  resultMeta: { color: colors.textSecondary, fontSize: 10, marginTop: 5 },
   selected: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 16,
-    padding: 9,
+    padding: 12,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 13,
     backgroundColor: colors.surface,
   },
-  card: { width: 30, height: 41, borderRadius: 4, marginRight: 10 },
-  selectedName: { color: colors.text, fontSize: 11, fontWeight: "600", flex: 1 },
+  card: { width: 44, height: 61, borderRadius: 6, marginRight: 12 },
+  selectedName: { color: colors.text, fontSize: 13, fontWeight: "700", flex: 1 },
   change: {
     color: colors.purple,
     fontSize: 8,
@@ -263,7 +264,7 @@ const s = StyleSheet.create({
   chips: { flexDirection: "row", gap: 8 },
   chip: {
     flex: 1,
-    height: 42,
+    height: 48,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
@@ -271,7 +272,7 @@ const s = StyleSheet.create({
     borderColor: colors.border,
   },
   chipOn: { backgroundColor: colors.purpleSoft, borderColor: colors.purple },
-  chipText: { color: colors.textSecondary, fontSize: 10 },
+  chipText: { color: colors.textSecondary, fontSize: 12 },
   chipTextOn: { color: colors.purple, fontWeight: "700" },
   photoRow: { flexDirection: "row", gap: 10 },
   photoAdd: {
@@ -288,12 +289,12 @@ const s = StyleSheet.create({
   photoText: { color: colors.purple, fontSize: 8, marginTop: 3 },
   photoPreview: { width: 76, height: 76, borderRadius: 10, backgroundColor: colors.surface },
   save: {
-    height: 52,
+    height: 56,
     borderRadius: 12,
     backgroundColor: colors.purple,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 30,
   },
-  saveText: { color: colors.bg, fontWeight: "800", fontSize: 11 },
+  saveText: { color: colors.bg, fontWeight: "800", fontSize: 13 },
 });

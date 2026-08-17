@@ -5,7 +5,7 @@ export const AppContext = createContext({
   updateUserProfile: () => {},
   preferences: {},
   updatePreferences: () => {},
+  logOut: async () => {},
 });
 
 export const useAppContext = () => useContext(AppContext);
-

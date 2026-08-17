@@ -122,6 +122,7 @@ import CollectionHistoryScreen from "./screens/CollectionHistoryScreen";
 import VaultScreen from "./screens/VaultScreen";
 import AddGradedAssetScreen from "./screens/AddGradedAssetScreen";
 import AddSealedAssetScreen from "./screens/AddSealedAssetScreen";
+import AddVaultAssetScreen from "./screens/AddVaultAssetScreen";
 import VaultAssetDetailScreen from "./screens/VaultAssetDetailScreen";
 import ValueHistoryScreen from "./screens/ValueHistoryScreen";
 import SignupScreen from "./screens/SignupScreen";
@@ -191,6 +192,7 @@ const SCREEN_PATHS = {
   CollectionFilters: "/collection/filters",
   CollectionOverview: "/collection/overview",
   Vault: "/collection/vault",
+  AddVaultAsset: "/collection/vault/add",
   AddGradedAsset: "/collection/vault/graded/add",
   AddSealedAsset: "/collection/vault/sealed/add",
   VaultAssetDetail: "/collection/vault/assets/:assetId",
@@ -272,6 +274,7 @@ const SCREENS = {
   CollectionFilters: CollectionFiltersScreen,
   CollectionOverview: CollectionOverviewScreen,
   Vault: VaultScreen,
+  AddVaultAsset: AddVaultAssetScreen,
   AddGradedAsset: AddGradedAssetScreen,
   AddSealedAsset: AddSealedAssetScreen,
   VaultAssetDetail: VaultAssetDetailScreen,
@@ -1151,7 +1154,7 @@ export default function App() {
 
   return (
     <AppContext.Provider
-      value={{ userProfile, updateUserProfile, preferences, updatePreferences }}
+      value={{ userProfile, updateUserProfile, preferences, updatePreferences, logOut }}
     >
       <SafeAreaProvider>
         <SafeAreaView

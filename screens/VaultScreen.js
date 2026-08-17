@@ -22,6 +22,7 @@ export default function VaultScreen({ navigate, collectionQuantities = {}, vault
 
   return <View style={s.screen}>
     <VaultHeader title="My Vault" onRight={() => navigate("Notifications")} rightIcon="notifications-outline" />
+    <View style={s.vaultTabs}><VaultTab icon="shield-checkmark-outline" label="Overview" active onPress={() => {}} /><VaultTab icon="add-circle-outline" label="Add Asset" onPress={() => navigate("AddVaultAsset")} /><VaultTab icon="analytics-outline" label="History" onPress={() => navigate("ValueHistory")} /></View>
     <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
       <View style={s.valuationCard}>
         <Text style={s.kicker}>TOTAL EST. VAULT VALUE</Text>
@@ -43,7 +44,6 @@ export default function VaultScreen({ navigate, collectionQuantities = {}, vault
         </TouchableOpacity>) : <View style={s.empty}><Text style={s.emptyTitle}>No premium assets yet</Text><Text style={s.emptyText}>Add a graded card or sealed product to begin your Vault.</Text></View>}
       </View></View>
 
-      <View style={s.vaultTabs}><VaultTab icon="shield-checkmark-outline" label="Vault" active onPress={() => {}} /><VaultTab icon="add-circle-outline" label="Add" onPress={() => navigate("AddGradedAsset")} /><VaultTab icon="analytics-outline" label="History" onPress={() => navigate("ValueHistory")} /></View>
     </ScrollView>
   </View>;
 }
@@ -52,7 +52,7 @@ const Allocation = ({ title, value, meta }) => <View style={s.allocation}><Text 
 const VaultTab = ({ icon, label, active, onPress }) => <TouchableOpacity style={s.vaultTab} onPress={onPress}><Ionicons name={icon} size={19} color={active ? colors.purple : colors.textTertiary} /><Text style={[s.vaultTabText, active && s.vaultTabActive]}>{label}</Text></TouchableOpacity>;
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg }, content: { paddingHorizontal: 24, paddingBottom: 18 },
+  screen: { flex: 1, backgroundColor: colors.bg }, content: { paddingHorizontal: 20, paddingBottom: 36 },
   valuationCard: { minHeight: 205, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 20 },
   kicker: { color: colors.textSecondary, fontSize: 10, fontWeight: "600" }, total: { color: colors.text, fontSize: 34, fontWeight: "800", marginTop: 4 },
   changeBadge: { alignSelf: "flex-start", borderRadius: 6, backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 4, marginTop: 5 }, changeText: { color: "#10B981", fontSize: 9, fontWeight: "700" }, spark: { flex: 1, justifyContent: "flex-end", paddingTop: 10 },
@@ -61,5 +61,5 @@ const s = StyleSheet.create({
   assets: { gap: 8, marginTop: 12 }, assetRow: { minHeight: 66, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 10, flexDirection: "row", alignItems: "center", gap: 10 }, thumb: { width: 46, height: 46, borderRadius: 8, backgroundColor: colors.card }, emptyThumb: { alignItems: "center", justifyContent: "center" }, emptyMark: { color: colors.purple },
   assetCopy: { flex: 1, minWidth: 0 }, assetName: { color: colors.text, fontSize: 11, fontWeight: "700" }, assetMeta: { color: colors.textTertiary, fontSize: 8, marginTop: 3 }, assetRight: { alignItems: "flex-end", maxWidth: 88 }, assetValue: { color: colors.text, fontSize: 10, fontWeight: "800" }, assetMove: { color: "#10B981", fontSize: 7, fontWeight: "700", marginTop: 4 },
   empty: { padding: 22, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, emptyTitle: { color: colors.text, fontSize: 13, fontWeight: "700" }, emptyText: { color: colors.textSecondary, fontSize: 9, lineHeight: 14, marginTop: 5 },
-  vaultTabs: { height: 58, marginHorizontal: -24, marginTop: 16, paddingHorizontal: 24, borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: "row", justifyContent: "space-between" }, vaultTab: { width: 72, alignItems: "center", justifyContent: "center" }, vaultTabText: { color: colors.textTertiary, fontSize: 8, marginTop: 3 }, vaultTabActive: { color: colors.purple, fontWeight: "700" },
+  vaultTabs: { height: 52, marginHorizontal: 20, marginBottom: 16, padding: 4, borderRadius: 15, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: "row" }, vaultTab: { flex: 1, borderRadius: 11, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" }, vaultTabText: { color: colors.textTertiary, fontSize: 10, fontWeight: "700" }, vaultTabActive: { color: colors.purple, fontWeight: "800" },
 });
