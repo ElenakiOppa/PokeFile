@@ -1,58 +1,10 @@
-
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../theme';
+import { Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import FigmaAuthStatus from '../components/FigmaAuthStatus';
 import { supabase } from '../lib/supabase';
-
-export default function PasswordResetEmailSentScreen({ navigate, params }) {
-  const email = (params && params.email) || 'you@example.com';
-  const [resent, setResent] = useState(false);
-  const [mailError, setMailError] = useState('');
-
-  const handleResend = async () => {
-    setMailError('');
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: 'pokefile://reset-password' });
-    if (error) { setMailError(error.message); return; }
-    setResent(true);
-    setTimeout(() => setResent(false), 2500);
-  };
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.iconCircle}>
-        <Text style={styles.icon}>✉</Text>
-      </View>
-
-      <Text style={styles.title}>Check your inbox</Text>
-      <Text style={styles.subtitle}>
-        We sent password reset instructions to{'\n'}
-        <Text style={styles.email}>{email}</Text>
-      </Text>
-
-      <TouchableOpacity style={styles.resendBtn} onPress={handleResend}>
-        <Text style={styles.resendText}>{resent ? 'Email resent ✓' : 'Resend'}</Text>
-      </TouchableOpacity>
-      {mailError ? <Text style={styles.mailError}>{mailError}</Text> : null}
-
-      <TouchableOpacity onPress={() => navigate('SignIn')}>
-        <Text style={styles.backToLogin}>Back to Log In</Text>
-      </TouchableOpacity>
-    </View>
-  );
+export default function PasswordResetEmailSentScreen({ navigate, goBack, params }) {
+  const email = params?.email || 'you@example.com'; const [resent, setResent] = useState(false); const [mailError, setMailError] = useState('');
+  const resend = async () => { setMailError(''); const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: 'pokefile://reset-password' }); if (error) { setMailError(error.message); return; } setResent(true); setTimeout(() => setResent(false), 2500); };
+  return <FigmaAuthStatus eyebrow="SECURITY VERIFICATION" title="Reset Dispatched" icon="mail-outline" heading="Check Your Mailbox" message={`A secure password recovery link has been dispatched to ${email}. Click the link in the message to redefine your security credentials.`} primaryLabel="Open Email App" onPrimary={() => Linking.openURL('message://').catch(() => {})} onBack={goBack}><TouchableOpacity onPress={() => navigate('SignIn')}><Text style={styles.signIn}>Remembered credentials?  <Text style={styles.gold}>Sign In</Text></Text></TouchableOpacity><TouchableOpacity onPress={resend}><Text style={styles.resend}>{resent ? 'Reset link resent ✓' : 'Resend reset link'}</Text></TouchableOpacity>{mailError ? <Text style={styles.error}>{mailError}</Text> : null}</FigmaAuthStatus>;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', paddingHorizontal: 24, justifyContent: 'center' },
-  iconCircle: {
-    width: 72, height: 72, borderRadius: 36, borderWidth: 1.5, borderColor: colors.purple,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  icon: { fontSize: 28, color: colors.purple },
-  title: { color: colors.text, fontSize: 24, fontWeight: '500', marginTop: 24, textAlign: 'center' },
-  subtitle: { color: colors.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 12, lineHeight: 20 },
-  email: { color: colors.text, fontWeight: '600' },
-  resendBtn: { marginTop: 36 },
-  resendText: { color: colors.purple, fontSize: 14, fontWeight: '600' },
-  backToLogin: { color: colors.textSecondary, fontSize: 13, marginTop: 16 },
-  mailError: { color: '#e74c3c', fontSize: 12, lineHeight: 17, textAlign: 'center', marginTop: 12 },
-});
+const styles = StyleSheet.create({ signIn: { color: '#A1A1AA', fontSize: 13, textAlign: 'center' }, gold: { color: '#D4AF37', fontWeight: '600' }, resend: { color: '#71717A', fontSize: 12, textAlign: 'center' }, error: { color: '#E45D5D', fontSize: 12, textAlign: 'center' } });

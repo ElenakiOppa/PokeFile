@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { colors } from '../theme';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 
 export default function SignInScreen({ navigate, goBack }) {
@@ -18,11 +9,10 @@ export default function SignInScreen({ navigate, goBack }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState('');
-
   const canSubmit = email.trim().length > 0 && password.length > 0;
+
   const handleSignIn = async () => {
-    setLoading(true);
-    setAuthError('');
+    setLoading(true); setAuthError('');
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     setLoading(false);
     if (error) { setAuthError(error.message); return; }
@@ -30,128 +20,60 @@ export default function SignInScreen({ navigate, goBack }) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <TouchableOpacity onPress={goBack} hitSlop={12} style={styles.back}>
-          <Text style={styles.backText}>‹</Text>
-        </TouchableOpacity>
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.body}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack}><Ionicons name="chevron-back" size={16} color="#F4F4F5" /></TouchableOpacity>
+          <View><Text style={styles.eyebrow}>TRAINER LOG</Text><Text style={styles.title}>Welcome Back</Text></View>
+        </View>
 
-        <Text style={styles.brand}>POKEFILE</Text>
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>Log in to pick up where you left off.</Text>
+        <View style={styles.fields}>
+          <Field label="EMAIL ADDRESS"><TextInput value={email} onChangeText={setEmail} placeholder="trainer@pallettown.com" placeholderTextColor="#71717A" style={styles.input} autoCapitalize="none" keyboardType="email-address" /></Field>
+          <Field label="PASSWORD"><View style={styles.passwordBox}><TextInput value={password} onChangeText={setPassword} placeholder="Enter your password" placeholderTextColor="#71717A" style={styles.passwordInput} secureTextEntry={!showPassword} autoCapitalize="none" /><TouchableOpacity onPress={() => setShowPassword((value) => !value)}><Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={16} color="#A1A1AA" /></TouchableOpacity></View></Field>
+        </View>
 
-        <View style={styles.form}>
-          <Text style={styles.label}>EMAIL</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={colors.textTertiary}
-            style={styles.input}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+        <TouchableOpacity style={styles.forgot} onPress={() => navigate('ForgotPassword')}><Text style={styles.goldLink}>Forgot Password?</Text></TouchableOpacity>
 
-          <View style={styles.passwordLabelRow}>
-            <Text style={styles.label}>PASSWORD</Text>
-            <TouchableOpacity hitSlop={10} onPress={() => navigate('ForgotPassword')}>
-              <Text style={styles.forgotLink}>Forgot?</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.passwordRow}>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              placeholderTextColor={colors.textTertiary}
-              style={styles.passwordInput}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={10}>
-              <Text style={styles.showToggle}>{showPassword ? 'HIDE' : 'SHOW'}</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.actions}>
+          <TouchableOpacity style={[styles.primary, (!canSubmit || loading) && styles.disabled]} disabled={!canSubmit || loading} onPress={handleSignIn}><Text style={styles.primaryText}>{loading ? 'Signing In…' : 'Sign In'}</Text></TouchableOpacity>
+          {authError ? <Text style={styles.error}>{authError}</Text> : null}
+          <View style={styles.inline}><Text style={styles.muted}>New trainer?</Text><TouchableOpacity onPress={() => navigate('Signup')}><Text style={styles.goldLink}>Create Account</Text></TouchableOpacity></View>
+        </View>
 
-          <TouchableOpacity
-            style={[styles.submitBtn, (!canSubmit || loading) && styles.submitBtnDisabled]}
-            disabled={!canSubmit || loading}
-            onPress={handleSignIn}
-          >
-            <Text style={styles.submitText}>{loading ? 'Logging In…' : 'Log In'}</Text>
-          </TouchableOpacity>
-          {authError ? <Text style={styles.authError}>{authError}</Text> : null}
-
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
+        <View style={styles.socialSection}>
+          <View style={styles.divider}><View style={styles.line} /><Text style={styles.or}>OR CONTINUE WITH</Text><View style={styles.line} /></View>
           <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.socialBtn} onPress={() => navigate('SocialAuthConfirm', { provider: 'Apple' })}>
-              <Text style={styles.socialText}> Apple</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialBtn} onPress={() => navigate('SocialAuthConfirm', { provider: 'Google' })}>
-              <Text style={styles.socialText}>G Google</Text>
-            </TouchableOpacity>
+            <SocialButton icon="logo-google" label="Google" onPress={() => navigate('SocialAuthConfirm', { provider: 'Google' })} />
+            <SocialButton icon="logo-apple" label="Apple" onPress={() => navigate('SocialAuthConfirm', { provider: 'Apple' })} />
           </View>
         </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigate('Signup')}>
-            <Text style={styles.footerLink}>Sign Up</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
+const Field = ({ label, children }) => <View style={styles.field}><Text style={styles.label}>{label}</Text>{children}</View>;
+const SocialButton = ({ icon, label, onPress }) => <TouchableOpacity style={styles.social} onPress={onPress}><Ionicons name={icon} size={16} color="#F4F4F5" /><Text style={styles.socialText}>{label}</Text></TouchableOpacity>;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
-  back: { width: 24 },
-  backText: { color: colors.text, fontSize: 28, fontWeight: '300' },
-  brand: { color: colors.purple, fontSize: 9, fontWeight: '800', letterSpacing: 1.2, marginTop: 20 },
-  title: { color: colors.text, fontSize: 30, fontWeight: '700', marginTop: 10, lineHeight: 36 },
-  subtitle: { color: colors.textSecondary, fontSize: 14, marginTop: 8 },
-  form: { marginTop: 32 },
-  label: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1.5, marginTop: 20 },
-  input: {
-    backgroundColor: colors.surface, borderRadius: 13, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 14,
-    marginTop: 8, color: colors.text, fontSize: 14,
-  },
-  passwordLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 },
-  forgotLink: { color: colors.purple, fontSize: 12, fontWeight: '600' },
-  passwordRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 13, borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: 14, marginTop: 8, height: 50,
-  },
-  passwordInput: { flex: 1, color: colors.text, fontSize: 14 },
-  showToggle: { color: colors.purple, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
-  submitBtn: { backgroundColor: colors.purple, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 28 },
-  submitBtnDisabled: { backgroundColor: 'rgba(139,92,246,0.35)' },
-  submitText: { color: colors.bg, fontSize: 15, fontWeight: '800' },
-  authError: { color: '#e74c3c', fontSize: 12, lineHeight: 17, textAlign: 'center', marginTop: 10 },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 28 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  dividerText: { color: colors.textTertiary, fontSize: 10, fontWeight: '600', letterSpacing: 1, marginHorizontal: 12 },
-  socialRow: { flexDirection: 'row', marginTop: 20 },
-  socialBtn: {
-    flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 14,
-    alignItems: 'center', marginHorizontal: 4,
-  },
-  socialText: { color: colors.text, fontSize: 14, fontWeight: '500' },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32 },
-  footerText: { color: colors.textSecondary, fontSize: 13 },
-  footerLink: { color: colors.purple, fontSize: 13, fontWeight: '600' },
+  screen: { flex: 1, backgroundColor: '#080808', justifyContent: 'center' },
+  body: { paddingHorizontal: 24, gap: 24 },
+  header: { height: 64, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 16 },
+  backButton: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', alignItems: 'center', justifyContent: 'center' },
+  eyebrow: { color: '#A1A1AA', fontSize: 11, fontWeight: '500' },
+  title: { color: '#F4F4F5', fontSize: 22, fontWeight: '600', marginTop: 2 },
+  fields: { gap: 16 }, field: { gap: 8 },
+  label: { color: '#A1A1AA', fontSize: 12, fontWeight: '500' },
+  input: { height: 48, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 16, color: '#F4F4F5', fontSize: 14 },
+  passwordBox: { height: 48, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  passwordInput: { flex: 1, color: '#F4F4F5', fontSize: 14 },
+  forgot: { alignSelf: 'flex-end' }, goldLink: { color: '#D4AF37', fontSize: 12, fontWeight: '600' },
+  actions: { gap: 20 }, primary: { height: 48, borderRadius: 14, backgroundColor: '#D4AF37', alignItems: 'center', justifyContent: 'center' },
+  disabled: { opacity: 0.42 }, primaryText: { color: '#080808', fontSize: 14, fontWeight: '600' },
+  inline: { flexDirection: 'row', justifyContent: 'center', gap: 6 }, muted: { color: '#A1A1AA', fontSize: 13 },
+  error: { color: '#E45D5D', fontSize: 12, textAlign: 'center', marginTop: -10 },
+  socialSection: { gap: 16 }, divider: { flexDirection: 'row', alignItems: 'center', gap: 12 }, line: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' },
+  or: { color: '#71717A', fontSize: 12 }, socialRow: { flexDirection: 'row', gap: 12 },
+  social: { flex: 1, height: 41, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  socialText: { color: '#F4F4F5', fontSize: 13, fontWeight: '500' },
 });

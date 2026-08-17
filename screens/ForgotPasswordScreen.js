@@ -1,74 +1,12 @@
-
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../theme';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-
 export default function ForgotPasswordScreen({ navigate, goBack }) {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const canSubmit = email.trim().length > 0;
-  const sendReset = async () => {
-    setLoading(true);
-    setAuthError('');
-    const normalizedEmail = email.trim().toLowerCase();
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: 'pokefile://reset-password' });
-    setLoading(false);
-    if (error) { setAuthError(error.message); return; }
-    navigate('PasswordResetEmailSent', { email: normalizedEmail });
-  };
-
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={goBack} hitSlop={12} style={styles.back}>
-        <Text style={styles.backText}>‹</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>Forgot password?</Text>
-      <Text style={styles.subtitle}>Enter the email linked to your account and we'll send you reset instructions.</Text>
-
-      <Text style={styles.label}>EMAIL</Text>
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        placeholder="you@example.com"
-        placeholderTextColor={colors.textTertiary}
-        style={styles.input}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-
-      <TouchableOpacity
-        style={[styles.primaryBtn, (!canSubmit || loading) && styles.primaryBtnDisabled]}
-        disabled={!canSubmit || loading}
-        onPress={sendReset}
-      >
-        <Text style={styles.primaryText}>{loading ? 'Sending…' : 'Send Reset Link'}</Text>
-      </TouchableOpacity>
-      {authError ? <Text style={styles.authError}>{authError}</Text> : null}
-
-      <TouchableOpacity onPress={() => navigate('SignIn')}>
-        <Text style={styles.backToLogin}>Back to Log In</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const [email, setEmail] = useState(''); const [loading, setLoading] = useState(false); const [authError, setAuthError] = useState('');
+  const sendReset = async () => { setLoading(true); setAuthError(''); const normalizedEmail = email.trim().toLowerCase(); const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: 'pokefile://reset-password' }); setLoading(false); if (error) { setAuthError(error.message); return; } navigate('PasswordResetEmailSent', { email: normalizedEmail }); };
+  return <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><View style={styles.body}><View style={styles.header}><TouchableOpacity style={styles.backButton} onPress={goBack}><Ionicons name="chevron-back" size={16} color="#F4F4F5" /></TouchableOpacity><View><Text style={styles.eyebrow}>ACCOUNT RECOVERY</Text><Text style={styles.title}>Reset Password</Text></View></View><Text style={styles.guidance}>Enter the email address tied to your trainer index. We will send a secure validation link to recover your account access.</Text><View style={styles.field}><Text style={styles.label}>REGISTERED EMAIL</Text><TextInput value={email} onChangeText={setEmail} placeholder="Enter your email address" placeholderTextColor="#71717A" style={[styles.input, email.length > 0 && styles.activeInput]} autoCapitalize="none" keyboardType="email-address" /></View><View style={styles.actions}><TouchableOpacity style={[styles.primary, (!email.trim() || loading) && styles.disabled]} disabled={!email.trim() || loading} onPress={sendReset}><Text style={styles.primaryText}>{loading ? 'Sending…' : 'Send Reset Link'}</Text></TouchableOpacity>{authError ? <Text style={styles.error}>{authError}</Text> : null}<View style={styles.inline}><Text style={styles.muted}>Remembered password?</Text><TouchableOpacity onPress={() => navigate('SignIn')}><Text style={styles.gold}>Sign In</Text></TouchableOpacity></View></View></View></KeyboardAvoidingView>;
 }
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24 },
-  back: { marginTop: 16 },
-  backText: { color: colors.text, fontSize: 28, fontWeight: '300' },
-  title: { color: colors.text, fontSize: 28, fontWeight: '300', marginTop: 24 },
-  subtitle: { color: colors.textSecondary, fontSize: 14, marginTop: 10, lineHeight: 20 },
-  label: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1.5, marginTop: 32 },
-  input: {
-    backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14,
-    marginTop: 8, color: colors.text, fontSize: 14,
-  },
-  primaryBtn: { backgroundColor: colors.purple, borderRadius: 24, paddingVertical: 16, alignItems: 'center', marginTop: 28 },
-  primaryBtnDisabled: { backgroundColor: 'rgba(139,92,246,0.35)' },
-  primaryText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  authError: { color: '#e74c3c', fontSize: 12, lineHeight: 17, textAlign: 'center', marginTop: 10 },
-  backToLogin: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginTop: 20 },
+  screen: { flex: 1, backgroundColor: '#080808', justifyContent: 'center' }, body: { paddingHorizontal: 24, gap: 24 }, header: { height: 64, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 16 }, backButton: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', alignItems: 'center', justifyContent: 'center' }, eyebrow: { color: '#A1A1AA', fontSize: 11, fontWeight: '500' }, title: { color: '#F4F4F5', fontSize: 22, fontWeight: '600', marginTop: 2 }, guidance: { color: '#A1A1AA', fontSize: 14, lineHeight: 21 }, field: { gap: 8 }, label: { color: '#A1A1AA', fontSize: 12, fontWeight: '500' }, input: { height: 48, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 16, color: '#F4F4F5', fontSize: 14 }, activeInput: { borderColor: '#D4AF37', backgroundColor: 'rgba(255,255,255,0.02)' }, actions: { gap: 16 }, primary: { height: 48, borderRadius: 14, backgroundColor: '#D4AF37', alignItems: 'center', justifyContent: 'center' }, disabled: { opacity: 0.42 }, primaryText: { color: '#080808', fontSize: 14, fontWeight: '600' }, inline: { flexDirection: 'row', justifyContent: 'center', gap: 6 }, muted: { color: '#A1A1AA', fontSize: 13 }, gold: { color: '#D4AF37', fontSize: 13, fontWeight: '600' }, error: { color: '#E45D5D', fontSize: 12, textAlign: 'center' },
 });

@@ -1,127 +1,37 @@
-
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../theme';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 
 const CODE_LENGTH = 6;
-
 export default function VerificationCodeScreen({ navigate, goBack, params }) {
-  const email = (params && params.email) || 'you@example.com';
+  const email = params?.email || 'you@example.com';
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(''));
-  const [seconds, setSeconds] = useState(30);
+  const [seconds, setSeconds] = useState(58);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState('');
   const inputs = useRef([]);
-
-  useEffect(() => {
-    if (seconds <= 0) return;
-    const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [seconds]);
-
-  const setDigit = (index, value) => {
-    const clean = value.replace(/[^0-9]/g, '').slice(-1);
-    const next = [...digits];
-    next[index] = clean;
-    setDigits(next);
-    if (clean && index < CODE_LENGTH - 1) {
-      inputs.current[index + 1] && inputs.current[index + 1].focus();
-    }
-  };
-
-  const handleKeyPress = (index, e) => {
-    if (e.nativeEvent.key === 'Backspace' && !digits[index] && index > 0) {
-      inputs.current[index - 1] && inputs.current[index - 1].focus();
-    }
-  };
-
+  useEffect(() => { if (seconds <= 0) return undefined; const timer = setTimeout(() => setSeconds((value) => value - 1), 1000); return () => clearTimeout(timer); }, [seconds]);
+  const setDigit = (index, value) => { const clean = value.replace(/[^0-9]/g, '').slice(-1); const next = [...digits]; next[index] = clean; setDigits(next); if (clean && index < CODE_LENGTH - 1) inputs.current[index + 1]?.focus(); };
+  const handleKeyPress = (index, event) => { if (event.nativeEvent.key === 'Backspace' && !digits[index] && index > 0) inputs.current[index - 1]?.focus(); };
   const code = digits.join('');
-  const canVerify = code.length === CODE_LENGTH;
-
-  const handleResend = async () => {
-    const { error } = await supabase.auth.resend({ type: 'signup', email });
-    if (error) { setAuthError(error.message); return; }
-    setSeconds(30);
-    setDigits(Array(CODE_LENGTH).fill(''));
-  };
-  const verifyCode = async () => {
-    setLoading(true);
-    setAuthError('');
-    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
-    setLoading(false);
-    if (error) { setAuthError(error.message); return; }
-    navigate('AccountVerified');
-  };
-
+  const verifyCode = async () => { setLoading(true); setAuthError(''); const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' }); setLoading(false); if (error) { setAuthError(error.message); return; } navigate('AccountVerified'); };
+  const handleResend = async () => { const { error } = await supabase.auth.resend({ type: 'signup', email }); if (error) { setAuthError(error.message); return; } setSeconds(58); setDigits(Array(CODE_LENGTH).fill('')); };
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={goBack} hitSlop={12} style={styles.back}>
-        <Text style={styles.backText}>‹</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>Enter verification code</Text>
-      <Text style={styles.subtitle}>Sent to {email}</Text>
-
-      <View style={styles.codeRow}>
-        {digits.map((d, i) => (
-          <TextInput
-            key={i}
-            ref={(r) => { inputs.current[i] = r; }}
-            value={d}
-            onChangeText={(v) => setDigit(i, v)}
-            onKeyPress={(e) => handleKeyPress(i, e)}
-            keyboardType="number-pad"
-            maxLength={1}
-            style={[styles.codeBox, d && styles.codeBoxFilled]}
-          />
-        ))}
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.body}>
+        <View style={styles.header}><TouchableOpacity style={styles.backButton} onPress={goBack}><Ionicons name="chevron-back" size={16} color="#F4F4F5" /></TouchableOpacity><View><Text style={styles.eyebrow}>TWO-FACTOR SECURITY</Text><Text style={styles.title}>Enter Code</Text></View></View>
+        <Text style={styles.info}>Enter the 6-digit confirmation code sent to <Text style={styles.email}>{email}</Text></Text>
+        <View style={styles.codeRow}>{digits.map((digit, index) => <TextInput key={index} ref={(input) => { inputs.current[index] = input; }} value={digit} onChangeText={(value) => setDigit(index, value)} onKeyPress={(event) => handleKeyPress(index, event)} keyboardType="number-pad" maxLength={1} style={[styles.codeBox, digit && styles.codeBoxActive]} />)}</View>
+        <View style={styles.actions}><TouchableOpacity style={[styles.primary, (code.length !== CODE_LENGTH || loading) && styles.disabled]} disabled={code.length !== CODE_LENGTH || loading} onPress={verifyCode}><Text style={styles.primaryText}>{loading ? 'Verifying…' : 'Verify Security Key'}</Text></TouchableOpacity>{authError ? <Text style={styles.error}>{authError}</Text> : null}<TouchableOpacity disabled={seconds > 0} onPress={handleResend} style={styles.timerRow}><Text style={styles.muted}>{seconds > 0 ? 'Resend code in' : 'Code expired?'}</Text><Text style={styles.gold}>{seconds > 0 ? `0:${String(seconds).padStart(2, '0')}` : 'Resend code'}</Text></TouchableOpacity></View>
       </View>
-
-      <TouchableOpacity
-        style={[styles.primaryBtn, (!canVerify || loading) && styles.primaryBtnDisabled]}
-        disabled={!canVerify || loading}
-        onPress={verifyCode}
-      >
-        <Text style={styles.primaryText}>{loading ? 'Verifying…' : 'Verify'}</Text>
-      </TouchableOpacity>
-      {authError ? <Text style={styles.authError}>{authError}</Text> : null}
-
-      <TouchableOpacity
-        style={styles.resendBtn}
-        disabled={seconds > 0}
-        onPress={handleResend}
-      >
-        <Text style={[styles.resendText, seconds > 0 && styles.resendTextDisabled]}>
-          {seconds > 0 ? `Resend code in 0:${String(seconds).padStart(2, '0')}` : 'Resend code'}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigate('AuthError', { reason: 'otp' })}>
-        <Text style={styles.expiredLink}>Code expired?</Text>
-      </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24 },
-  back: { marginTop: 16 },
-  backText: { color: colors.text, fontSize: 28, fontWeight: '300' },
-  title: { color: colors.text, fontSize: 26, fontWeight: '500', marginTop: 24 },
-  subtitle: { color: colors.textSecondary, fontSize: 14, marginTop: 8 },
-  codeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 32 },
-  codeBox: {
-    width: 46, height: 56, borderRadius: 10, backgroundColor: colors.card,
-    color: colors.text, fontSize: 22, textAlign: 'center', borderWidth: 1.5, borderColor: colors.border,
-  },
-  codeBoxFilled: { borderColor: colors.purple },
-  primaryBtn: { backgroundColor: colors.purple, borderRadius: 24, paddingVertical: 16, alignItems: 'center', marginTop: 36 },
-  primaryBtnDisabled: { backgroundColor: 'rgba(139,92,246,0.35)' },
-  primaryText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  resendBtn: { marginTop: 20, alignItems: 'center' },
-  resendText: { color: colors.purple, fontSize: 14, fontWeight: '600' },
-  resendTextDisabled: { color: colors.textTertiary },
-  expiredLink: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginTop: 16 },
-  authError: { color: '#e74c3c', fontSize: 12, lineHeight: 17, textAlign: 'center', marginTop: 10 },
+  screen: { flex: 1, backgroundColor: '#080808', justifyContent: 'center' }, body: { paddingHorizontal: 24, gap: 32 },
+  header: { height: 64, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 16 }, backButton: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', alignItems: 'center', justifyContent: 'center' },
+  eyebrow: { color: '#A1A1AA', fontSize: 11, fontWeight: '500' }, title: { color: '#F4F4F5', fontSize: 22, fontWeight: '600', marginTop: 2 }, info: { color: '#A1A1AA', fontSize: 14, lineHeight: 18, textAlign: 'center' }, email: { color: '#F4F4F5', fontWeight: '600' },
+  codeRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' }, codeBox: { width: 48, height: 56, borderRadius: 12, backgroundColor: '#121212', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', color: '#F4F4F5', fontSize: 20, fontWeight: '600', textAlign: 'center' }, codeBoxActive: { borderColor: '#D4AF37', backgroundColor: 'rgba(212,175,55,0.12)' },
+  actions: { gap: 16 }, primary: { height: 48, borderRadius: 14, backgroundColor: '#D4AF37', alignItems: 'center', justifyContent: 'center' }, primaryText: { color: '#080808', fontSize: 14, fontWeight: '600' }, disabled: { opacity: 0.42 }, timerRow: { flexDirection: 'row', gap: 6, justifyContent: 'center' }, muted: { color: '#A1A1AA', fontSize: 13 }, gold: { color: '#D4AF37', fontSize: 13, fontWeight: '600' }, error: { color: '#E45D5D', fontSize: 12, textAlign: 'center' },
 });

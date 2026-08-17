@@ -1,34 +1,11 @@
-
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../theme';
-
+import { Ionicons } from '@expo/vector-icons';
 export default function AccountVerifiedScreen({ navigate }) {
-  return (
-    <View style={styles.container}>
-      <View style={styles.iconCircle}>
-        <Text style={styles.icon}>✓</Text>
-      </View>
-
-      <Text style={styles.title}>Account verified</Text>
-      <Text style={styles.subtitle}>Your email has been confirmed. Let's finish setting up your profile.</Text>
-
-      <TouchableOpacity style={styles.primaryBtn} onPress={() => navigate('CompleteProfile')}>
-        <Text style={styles.primaryText}>Continue</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  return <View style={styles.screen}><View style={styles.body}><View style={styles.header}><Text style={styles.eyebrow}>SECURE REGISTRY</Text><Text style={styles.title}>Verification Complete</Text></View><View style={styles.iconBlock}><View style={styles.glow} /><View style={styles.iconCircle}><Ionicons name="checkmark" size={44} color="#D4AF37" /></View></View><View style={styles.copy}><Text style={styles.heading}>Registry Active</Text><Text style={styles.message}>Your trainer credentials have been validated successfully. Your vault and portfolio assets are now secured.</Text></View><TouchableOpacity style={styles.primary} onPress={() => navigate('CompleteProfile')}><Text style={styles.primaryText}>Enter Dashboard</Text></TouchableOpacity></View></View>;
 }
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
-  iconCircle: {
-    width: 72, height: 72, borderRadius: 36, borderWidth: 1.5, borderColor: colors.purple,
-    justifyContent: 'center', alignItems: 'center', backgroundColor: colors.purpleSoft,
-  },
-  icon: { fontSize: 30, color: colors.purple, fontWeight: '700' },
-  title: { color: colors.text, fontSize: 26, fontWeight: '700', marginTop: 24, textAlign: 'center' },
-  subtitle: { color: colors.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 12, lineHeight: 20 },
-  primaryBtn: { backgroundColor: colors.purple, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 36, width: '100%' },
-  primaryText: { color: colors.bg, fontSize: 15, fontWeight: '800' },
+  screen: { flex: 1, backgroundColor: '#080808', justifyContent: 'center' }, body: { paddingHorizontal: 24, gap: 32, alignItems: 'center' }, header: { width: '100%', height: 64, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }, eyebrow: { color: '#A1A1AA', fontSize: 11, fontWeight: '500' }, title: { color: '#F4F4F5', fontSize: 22, fontWeight: '600', marginTop: 2 },
+  iconBlock: { width: 120, height: 120, alignItems: 'center', justifyContent: 'center' }, glow: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(212,175,55,0.08)', shadowColor: '#D4AF37', shadowOpacity: 0.4, shadowRadius: 35 }, iconCircle: { width: 82, height: 82, borderRadius: 41, borderWidth: 1, borderColor: 'rgba(212,175,55,0.35)', alignItems: 'center', justifyContent: 'center' },
+  copy: { gap: 12, alignItems: 'center' }, heading: { color: '#F4F4F5', fontSize: 22, fontWeight: '600' }, message: { color: '#A1A1AA', fontSize: 14, lineHeight: 21, textAlign: 'center' }, primary: { width: '100%', height: 48, borderRadius: 14, backgroundColor: '#D4AF37', alignItems: 'center', justifyContent: 'center' }, primaryText: { color: '#080808', fontSize: 14, fontWeight: '600' },
 });

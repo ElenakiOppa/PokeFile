@@ -1,61 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { Animated, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../theme';
-
-const { width } = Dimensions.get('window');
-const SLIDES = [
-  { eyebrow: 'BUILD', title: 'Your collection, organized', body: 'Track cards and every variant without losing your place.', symbol: '◇' },
-  { eyebrow: 'BIND', title: 'Create visual binders', body: 'Choose a goal and pocket format, then watch every page fill up.', symbol: '▤' },
-  { eyebrow: 'COMPLETE', title: 'Chase every milestone', body: 'Complete, Master, and Grandmaster progress stays together.', symbol: '✓' },
-];
-
-export default function OnboardingScreen({ navigate }) {
-  const [index, setIndex] = useState(0);
-  const scrollRef = useRef(null);
-  const opacity = useRef(new Animated.Value(1)).current;
-
-  const next = () => {
-    if (index === SLIDES.length - 1) { navigate('Home'); return; }
-    const nextIndex = index + 1;
-    scrollRef.current?.scrollTo({ x: nextIndex * width, animated: true });
-    setIndex(nextIndex);
-  };
-
-  return (
-    <View style={styles.screen}>
-      <View style={styles.brandWrap}><Image source={require('../assets/splash_light.png')} style={styles.brand} resizeMode="contain" /></View>
-      <ScrollView ref={scrollRef} horizontal pagingEnabled scrollEnabled={false} showsHorizontalScrollIndicator={false}>
-        {SLIDES.map((slide) => <View key={slide.eyebrow} style={styles.slide}>
-          <View style={styles.visual}><View style={styles.glow} /><Text style={styles.symbol}>{slide.symbol}</Text></View>
-          <Text style={styles.eyebrow}>{slide.eyebrow}</Text><Text style={styles.title}>{slide.title}</Text><Text style={styles.body}>{slide.body}</Text>
-        </View>)}
-      </ScrollView>
-      <View style={styles.footer}>
-        <View style={styles.dots}>{SLIDES.map((slide, dotIndex) => <View key={slide.eyebrow} style={[styles.dot, dotIndex === index && styles.dotActive]} />)}</View>
-        <TouchableOpacity style={styles.button} onPress={next}><Text style={styles.buttonText}>{index === SLIDES.length - 1 ? 'Enter PokeFile' : 'Continue'}</Text><Text style={styles.arrow}>→</Text></TouchableOpacity>
-        {index < SLIDES.length - 1 ? <TouchableOpacity onPress={() => navigate('Home')}><Text style={styles.skip}>Skip</Text></TouchableOpacity> : null}
-      </View>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  brandWrap: { height: 72, paddingHorizontal: 24, alignItems: 'flex-start', justifyContent: 'center' },
-  brand: { width: 150, height: 50 },
-  slide: { width, paddingHorizontal: 32, justifyContent: 'center', paddingBottom: 80 },
-  visual: { width: 220, height: 220, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', marginBottom: 36 },
-  glow: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.purpleSoft, borderWidth: 1, borderColor: 'rgba(139,92,246,0.35)' },
-  symbol: { color: colors.purple, fontSize: 78, fontWeight: '200' },
-  eyebrow: { color: colors.purple, fontSize: 10, fontWeight: '700', letterSpacing: 2 },
-  title: { color: colors.text, fontSize: 34, fontWeight: '300', lineHeight: 39, marginTop: 10 },
-  body: { color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 12, maxWidth: 330 },
-  footer: { paddingHorizontal: 24, paddingBottom: 20 },
-  dots: { flexDirection: 'row', justifyContent: 'center', marginBottom: 18 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.borderStrong, marginHorizontal: 4 },
-  dotActive: { width: 22, backgroundColor: colors.purple },
-  button: { height: 56, borderRadius: 28, backgroundColor: colors.purple, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
-  buttonText: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  arrow: { color: colors.text, fontSize: 19 },
-  skip: { color: colors.textSecondary, textAlign: 'center', fontSize: 13, marginTop: 15 },
-});
+import React,{useState}from'react';
+import{View,Text,Image,TouchableOpacity,StyleSheet}from'react-native';
+const LEFT=require('../assets/figma/auth/onboarding-card-left.png');const CENTER=require('../assets/figma/auth/onboarding-card-center.png');const RIGHT=require('../assets/figma/auth/onboarding-card-right.png');
+const SLIDES=[{title:'Discover & Catalog',body:'Audit population reports, track pristine acquisitions, and index real-time valuation updates in the elite registry index.'},{title:'Build Visual Binders',body:'Arrange your real collection into polished set binders while every missing requirement keeps its correct position.'},{title:'Complete Your Registry',body:'Follow Complete, Master, and Grandmaster progress using the verified collectible requirements already built into Pokéfile.'}];
+export default function OnboardingScreen({navigate}){const[index,setIndex]=useState(0);const slide=SLIDES[index];const next=()=>index===SLIDES.length-1?navigate('Home'):setIndex(index+1);return <View style={styles.screen}><View style={styles.top}><Text style={styles.brand}>POKÉFILE INDEX</Text>{index<SLIDES.length-1?<TouchableOpacity onPress={()=>navigate('Home')}><Text style={styles.skip}>Skip</Text></TouchableOpacity>:null}</View><View style={styles.body}><View style={styles.hero}><View style={styles.glow}/><View style={styles.cards}><Image source={LEFT} style={[styles.side,styles.left]} resizeMode="cover"/><Image source={CENTER} style={styles.center} resizeMode="cover"/><Image source={RIGHT} style={[styles.side,styles.right]} resizeMode="cover"/></View></View><View style={styles.copy}><Text style={styles.title}>{slide.title}</Text><Text style={styles.text}>{slide.body}</Text></View><View style={styles.footer}><View style={styles.dots}>{SLIDES.map((item,dot)=><View key={item.title} style={[styles.dot,dot===index&&styles.dotActive]}/>)}</View><TouchableOpacity style={styles.primary} onPress={next}><Text style={styles.primaryText}>{index===SLIDES.length-1?'Enter Pokéfile':'Next Step'}</Text></TouchableOpacity></View></View></View>}
+const styles=StyleSheet.create({screen:{flex:1,backgroundColor:'#080808',justifyContent:'space-between'},top:{paddingHorizontal:24,paddingTop:12,flexDirection:'row',justifyContent:'space-between'},brand:{color:'#D4AF37',fontSize:13,fontWeight:'600'},skip:{color:'#A1A1AA',fontSize:13,fontWeight:'500'},body:{paddingHorizontal:24,paddingBottom:24,gap:32},hero:{height:260,borderRadius:24,borderWidth:1,borderColor:'rgba(255,255,255,0.08)',backgroundColor:'#121212',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:24},glow:{position:'absolute',left:-1,top:-1,width:220,height:220,borderRadius:110,backgroundColor:'rgba(212,175,55,0.08)'},cards:{height:180,flexDirection:'row',alignItems:'center',justifyContent:'center'},side:{width:110,height:150,borderRadius:8,borderWidth:1,borderColor:'rgba(255,255,255,0.08)'},left:{transform:[{rotate:'-12deg'}],marginRight:-36},center:{width:120,height:164,borderRadius:8,borderWidth:2,borderColor:'#D4AF37',zIndex:2},right:{transform:[{rotate:'12deg'}],marginLeft:-36},copy:{gap:12,alignItems:'center'},title:{color:'#F4F4F5',fontSize:24,fontWeight:'600',textAlign:'center'},text:{color:'#A1A1AA',fontSize:14,lineHeight:21,textAlign:'center'},footer:{gap:24,alignItems:'center'},dots:{height:6,flexDirection:'row',gap:8},dot:{width:6,height:6,borderRadius:3,backgroundColor:'#3F3F46'},dotActive:{width:24,backgroundColor:'#D4AF37'},primary:{width:'100%',height:48,borderRadius:14,backgroundColor:'#D4AF37',alignItems:'center',justifyContent:'center'},primaryText:{color:'#080808',fontSize:14,fontWeight:'600'}});
