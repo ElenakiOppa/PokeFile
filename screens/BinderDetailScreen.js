@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
 import { colors } from "../theme";
 import RegistryHeader from "../components/RegistryHeader";
@@ -18,7 +18,6 @@ import {
   paginateBinderSlots,
 } from "../lib/collectibles";
 
-const { width } = Dimensions.get("window");
 const GAP = 10;
 
 export default function BinderDetailScreen({
@@ -32,6 +31,7 @@ export default function BinderDetailScreen({
   binders = [],
   removeCardFromBinder = () => {},
 }) {
+  const { width } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState(() =>
     Math.max(0, Number(params.page) || 0),
   );
@@ -52,9 +52,13 @@ export default function BinderDetailScreen({
   const pageCapacity = pocketLayout === 24 ? 12 : pocketLayout;
   const compactCards = true;
   const columns = pocketLayout === 9 ? 3 : 4;
-  // Screen width minus page margins, borders, and the grid's horizontal padding.
-  const pageContentWidth = width - 32 - 2 - 16;
-  const cardWidth = (pageContentWidth - GAP * (columns - 1)) / columns;
+  // Viewport minus the screen inset, page margins/borders, and grid padding.
+  // Keeping this derived from the actual window width guarantees 3 × 3 and
+  // 4-column pages do not wrap when the surrounding screen padding changes.
+  const pageContentWidth = width - 40 - 32 - 2 - 16;
+  const cardWidth = Math.floor(
+    (pageContentWidth - GAP * (columns - 1)) / columns,
+  );
   const isFreeform = savedBinder?.kind === "freeform";
   const requirementSlots = useMemo(
     () => getGeneratedBinderSlots(binder, tier),
