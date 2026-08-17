@@ -6,7 +6,7 @@ const ITEMS = [
   { key: 'Home', label: 'Home', hasArrow: true },
   { key: 'Search', label: 'Search' },
   { key: 'CollectionAll', label: 'Collection' },
-  { key: 'AllSets', label: 'Sets' },
+  { key: 'SeriesView', label: 'Sets' },
   { key: 'Binders', label: 'Binders' },
   { key: 'Wishlist', label: 'Wishlist' },
   { key: 'Profile', label: 'Profile' },
