@@ -1,92 +1,26 @@
+import React from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { colors } from "../theme";
+import { CARD_LIBRARY } from "../data";
+import CollectionSectionTabs from "../components/CollectionSectionTabs";
 
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { colors } from '../theme';
-import { CARD_LIBRARY, PROFILE } from '../data';
-
-export default function CollectionOverviewScreen({ navigate, goBack, collectionQuantities = {}, binders = [] }) {
-  const collectedCards = CARD_LIBRARY.filter((card) => Number(collectionQuantities[card.id] || 0) > 0);
-  const recentCard = collectedCards[0] || null;
-
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} hitSlop={12}>
-          <Text style={styles.back}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.label}>COLLECTION OVERVIEW</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <View style={styles.statsRow}>
-        <Stat value={String(Object.values(collectionQuantities).reduce((sum, quantity) => sum + Number(quantity || 0), 0))} label="Cards" />
-        <Stat value={String(PROFILE.stats.sets)} label="Sets" />
-        <Stat value={String(binders.length)} label="Binders" />
-      </View>
-
-      <View style={styles.valueBlock}>
-        <Text style={styles.valueAmount}>€{collectedCards.reduce((sum, card) => sum + Number(card.value || 0) * Number(collectionQuantities[card.id] || 0), 0).toFixed(2)}</Text>
-        <Text style={styles.valueLabel}>Collection Value</Text>
-      </View>
-
-      <TouchableOpacity style={styles.filtersBtn} onPress={() => navigate('CollectionFilters')}>
-        <Text style={styles.filtersBtnText}>Apply Filters</Text>
-      </TouchableOpacity>
-
-      {recentCard ? (
-        <TouchableOpacity
-          style={styles.recentCard}
-          onPress={() => navigate('CardDetail', { cardId: recentCard.id })}
-          activeOpacity={0.8}
-        >
-          <Image
-            source={{ uri: recentCard.image }}
-            style={styles.recentThumb}
-            resizeMode="contain"
-          />
-          <View style={{ marginLeft: 14 }}>
-            <Text style={styles.recentName}>{recentCard.name}</Text>
-            <Text style={styles.recentPrice}>€{Number(recentCard.value || 0).toFixed(2)}</Text>
-          </View>
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Your collection is empty</Text>
-          <Text style={styles.emptyText}>When you add cards, they will show up here.</Text>
-        </View>
-      )}
-    </ScrollView>
-  );
+export default function CollectionOverviewScreen({ navigate, collectionQuantities = {}, vaultAssets = [] }) {
+  const owned = CARD_LIBRARY.filter((card)=>Number(collectionQuantities[card.id]||0)>0);
+  const quantity = owned.reduce((sum,card)=>sum+Number(collectionQuantities[card.id]||0),0);
+  const cardValue = owned.reduce((sum,card)=>sum+Number(card.value||0)*Number(collectionQuantities[card.id]||0),0);
+  const vaultValue = vaultAssets.reduce((sum,a)=>sum+Number(a.marketValue||a.value||0)*Number(a.quantity||1),0);
+  const total = cardValue + vaultValue;
+  const mostValuable = [...owned].sort((a,b)=>Number(b.value||0)-Number(a.value||0)).slice(0,3);
+  const rarityCounts = owned.reduce((map,card)=>{const key=card.rarity||"Unknown";map[key]=(map[key]||0)+1;return map},{});
+  const rarityRows = Object.entries(rarityCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  return <ScrollView style={s.page} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+    <View style={s.heading}><View><Text style={s.title}>Collection Metrics</Text><Text style={s.kicker}>ANALYTIC PERFORMANCE</Text></View><View style={s.coin}><Text style={s.coinText}>C</Text></View></View>
+    <CollectionSectionTabs active="CollectionOverview" navigate={navigate}/>
+    <View style={s.stats}><Stat label="PORTFOLIO VALUE" value={`€${total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`} meta="LIVE OWNED VALUE"/><Stat label="TOTAL SPECIMENS" value={`${quantity} Items`} meta={`${vaultAssets.length} VAULT ASSETS`}/></View>
+    <View style={s.rarity}><Text style={s.section}>INDEX BREAKDOWN BY RARITY</Text><View style={s.rarityBody}><View style={s.ring}><Text style={s.ringValue}>{owned.length}</Text><Text style={s.ringLabel}>CARDS</Text></View><View style={s.legend}>{rarityRows.length ? rarityRows.map(([name,count])=><View key={name} style={s.legendRow}><View style={s.dot}/><Text style={s.legendText}>{name} ({Math.round(count/owned.length*100)}%)</Text></View>) : <Text style={s.empty}>No owned cards yet.</Text>}</View></View></View>
+    <Text style={[s.section,{marginHorizontal:24,marginTop:18}]}>MOST VALUABLE ASSETS</Text>
+    <View style={s.list}>{mostValuable.length ? mostValuable.map((card,index)=><TouchableOpacity key={card.id} style={s.asset} onPress={()=>navigate("CardDetail",{cardId:card.id})}><Text style={s.rank}>{String(index+1).padStart(2,"0")}</Text><View style={s.assetInfo}><Text style={s.assetName} numberOfLines={1}>{card.name}</Text><Text style={s.assetMeta}>{card.setName}</Text></View><Text style={s.assetValue}>€{Number(card.value||0).toFixed(2)}</Text></TouchableOpacity>) : <View style={s.asset}><Text style={s.empty}>Add cards to generate collection metrics.</Text></View>}</View>
+  </ScrollView>;
 }
-
-function Stat({ value, label }) {
-  return (
-    <View style={{ alignItems: 'flex-start' }}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20 },
-  back: { color: colors.text, fontSize: 28, fontWeight: '300' },
-  label: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1.5, flex: 1, textAlign: 'center' },
-  headerSpacer: { width: 28 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, width: '70%' },
-  statValue: { color: colors.text, fontSize: 26, fontWeight: '300' },
-  statLabel: { color: colors.textSecondary, fontSize: 12, marginTop: 4 },
-  valueBlock: { marginTop: 28 },
-  valueAmount: { color: colors.text, fontSize: 34, fontWeight: '300' },
-  valueLabel: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
-  filtersBtn: { backgroundColor: colors.purple, borderRadius: 24, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
-  filtersBtnText: { color: colors.text, fontSize: 14, fontWeight: '600' },
-  recentCard: { flexDirection: 'row', alignItems: 'center', marginTop: 32, marginBottom: 40 },
-  recentThumb: { width: 60, height: 80, borderRadius: 8, backgroundColor: colors.card },
-  recentName: { color: colors.text, fontSize: 15, fontWeight: '500' },
-  recentPrice: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
-  emptyState: { marginTop: 32, padding: 20, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '600' },
-  emptyText: { color: colors.textSecondary, fontSize: 13, marginTop: 8 },
-});
+function Stat({label,value,meta}){return <View style={s.stat}><Text style={s.micro}>{label}</Text><Text style={s.statValue}>{value}</Text><Text style={s.statMeta}>{meta}</Text></View>}
+const s=StyleSheet.create({page:{flex:1,backgroundColor:colors.bg},content:{paddingTop:24,paddingBottom:40},heading:{paddingHorizontal:24,flexDirection:"row",justifyContent:"space-between",alignItems:"center"},title:{color:colors.text,fontSize:26,fontWeight:"800"},kicker:{color:colors.purple,fontSize:9,fontWeight:"800",letterSpacing:1.2,marginTop:3},coin:{width:34,height:34,borderRadius:17,borderWidth:1,borderColor:colors.purple,alignItems:"center",justifyContent:"center"},coinText:{color:colors.purple,fontSize:10,fontWeight:"800"},stats:{flexDirection:"row",gap:9,paddingHorizontal:24,marginTop:18},stat:{flex:1,padding:13,borderRadius:13,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border},micro:{color:colors.textTertiary,fontSize:7,fontWeight:"700"},statValue:{color:colors.text,fontSize:16,fontWeight:"800",marginTop:6},statMeta:{color:colors.purple,fontSize:7,fontWeight:"800",marginTop:5},rarity:{marginHorizontal:24,marginTop:11,padding:15,borderRadius:15,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border},section:{color:colors.purple,fontSize:9,fontWeight:"800",letterSpacing:.6},rarityBody:{flexDirection:"row",alignItems:"center",marginTop:15},ring:{width:78,height:78,borderRadius:39,borderWidth:13,borderColor:colors.purple,alignItems:"center",justifyContent:"center"},ringValue:{color:colors.text,fontSize:14,fontWeight:"800"},ringLabel:{color:colors.textTertiary,fontSize:6,fontWeight:"700"},legend:{flex:1,marginLeft:18,gap:8},legendRow:{flexDirection:"row",alignItems:"center"},dot:{width:8,height:8,borderRadius:2,backgroundColor:colors.purple,marginRight:7},legendText:{color:colors.textSecondary,fontSize:9},list:{marginHorizontal:24,marginTop:8,gap:7},asset:{minHeight:54,borderRadius:11,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,flexDirection:"row",alignItems:"center",paddingHorizontal:12},rank:{color:colors.purple,fontSize:10,fontWeight:"800",width:28},assetInfo:{flex:1},assetName:{color:colors.text,fontSize:10,fontWeight:"700"},assetMeta:{color:colors.textTertiary,fontSize:7,marginTop:3},assetValue:{color:colors.text,fontSize:10,fontWeight:"800"},empty:{color:colors.textSecondary,fontSize:10}});

@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { colors } from '../theme';
 import FilterChip from '../components/FilterChip';
 import { CARD_LIBRARY, SETS } from '../data';
+import CollectionSectionTabs from '../components/CollectionSectionTabs';
 
 const SET_OPTIONS = ['All Sets', ...Array.from(new Set(SETS.map((set) => set.name).filter(Boolean)))];
 const RARITY = ['All', ...Array.from(new Set(CARD_LIBRARY.map((card) => card.rarity).filter(Boolean))).sort()];
@@ -11,7 +12,7 @@ const CONDITION = ['All', 'Raw', 'Near Mint', 'Lightly Played', 'Moderately Play
 const OWNERSHIP = ['All Cards', 'Owned', 'Missing'];
 const DEFAULTS = { set: 'All Sets', rarity: 'All', condition: 'All', ownership: 'Owned' };
 
-export default function CollectionFiltersScreen({ goBack, collectionFilters = DEFAULTS, setCollectionFilters = () => {} }) {
+export default function CollectionFiltersScreen({ goBack, navigate, collectionFilters = DEFAULTS, setCollectionFilters = () => {} }) {
   const [set, setSet] = useState(collectionFilters.set || DEFAULTS.set);
   const [rarity, setRarity] = useState(collectionFilters.rarity || DEFAULTS.rarity);
   const [condition, setCondition] = useState(collectionFilters.condition || DEFAULTS.condition);
@@ -30,14 +31,15 @@ export default function CollectionFiltersScreen({ goBack, collectionFilters = DE
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>FILTERS</Text>
-        <TouchableOpacity onPress={clear}>
-          <Text style={styles.clear}>CLEAR</Text>
+        <View><Text style={styles.title}>Registry Filters</Text><Text style={styles.kicker}>REFINE INDEX</Text></View>
+        <TouchableOpacity style={styles.closeButton} onPress={goBack}>
+          <Text style={styles.close}>×</Text>
         </TouchableOpacity>
       </View>
+      <CollectionSectionTabs active="CollectionFilters" navigate={navigate} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionLabel}>SETS</Text>
+        <Text style={styles.sectionLabel}>EXPANSION SET</Text>
         <View style={styles.chipRow}>
           {SET_OPTIONS.map((s) => <FilterChip key={s} label={s} active={set === s} onPress={() => setSet(s)} />)}
         </View>
@@ -58,20 +60,23 @@ export default function CollectionFiltersScreen({ goBack, collectionFilters = DE
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.applyBtn} onPress={apply}>
-        <Text style={styles.applyText}>Apply Filters</Text>
-      </TouchableOpacity>
+      <View style={styles.actions}><TouchableOpacity style={styles.resetBtn} onPress={clear}><Text style={styles.resetText}>Reset All</Text></TouchableOpacity><TouchableOpacity style={styles.applyBtn} onPress={apply}><Text style={styles.applyText}>Apply Refinements</Text></TouchableOpacity></View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, paddingTop: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { color: colors.text, fontSize: 22, fontWeight: '600', letterSpacing: 1 },
-  clear: { color: colors.purple, fontSize: 12, fontWeight: '600' },
-  sectionLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1.5, marginTop: 28, marginBottom: 10 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  applyBtn: { backgroundColor: colors.purple, borderRadius: 24, paddingVertical: 15, alignItems: 'center', marginBottom: 30, marginTop: 20 },
-  applyText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  container: { flex: 1, backgroundColor: colors.bg, paddingTop: 20 },
+  header: { paddingHorizontal:24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  title: { color: colors.text, fontSize: 26, fontWeight: '800' },
+  kicker:{color:colors.purple,fontSize:9,fontWeight:'800',letterSpacing:1.2,marginTop:3},
+  closeButton:{width:30,height:30,borderRadius:15,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,alignItems:'center',justifyContent:'center'},
+  close:{color:colors.text,fontSize:19,lineHeight:20},
+  sectionLabel: { color: colors.purple, fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginTop: 23, marginBottom: 10, paddingHorizontal:24 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal:24 },
+  actions:{flexDirection:'row',gap:10,paddingHorizontal:24,paddingBottom:18,paddingTop:12},
+  resetBtn:{flex:1,height:48,borderRadius:12,borderWidth:1,borderColor:colors.border,alignItems:'center',justifyContent:'center'},
+  resetText:{color:colors.text,fontSize:12,fontWeight:'700'},
+  applyBtn: { flex:1.25,backgroundColor: colors.purple, borderRadius: 12, alignItems: 'center',justifyContent:'center' },
+  applyText: { color: colors.bg, fontSize: 12, fontWeight: '800' },
 });

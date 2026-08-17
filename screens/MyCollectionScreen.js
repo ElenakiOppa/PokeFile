@@ -1,80 +1,23 @@
+import React from "react";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { colors } from "../theme";
+import { CARD_LIBRARY } from "../data";
+import CollectionSectionTabs from "../components/CollectionSectionTabs";
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { colors } from '../theme';
-import { CARD_LIBRARY } from '../data';
-
-const RECENT = CARD_LIBRARY.slice(0, 5).map((card) => ({ id: card.id, label: card.name }));
-
-export default function MyCollectionScreen({ navigate, goBack }) {
-  const [query, setQuery] = useState('');
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} hitSlop={12}>
-          <Text style={styles.back}>‹</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.addBtn}>
-          <Text style={styles.addPlus}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.title}>Search for a card</Text>
-
-      <View style={styles.inputRow}>
-        <Text style={styles.searchIcon}>⌕</Text>
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search card name or number..."
-          placeholderTextColor={colors.textTertiary}
-          style={styles.input}
-        />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionLabel}>RECENT SEARCHES</Text>
-        {RECENT.map((item) => (
-          <TouchableOpacity key={item.id} style={styles.rowItem} onPress={() => navigate('CardDetail', { cardId: item.id })}>
-            <Text style={styles.rowIcon}>↻</Text>
-            <Text style={styles.rowText}>{item.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <TouchableOpacity style={styles.scanBtn}>
-        <Text style={styles.scanIcon}>▢</Text>
-        <Text style={styles.scanText}>Scan Card</Text>
-      </TouchableOpacity>
-    </View>
-  );
+export default function MyCollectionScreen({ navigate, collectionQuantities = {}, binders = [], wishlistItems = [], vaultAssets = [] }) {
+  const owned = CARD_LIBRARY.filter((card) => Number(collectionQuantities[card.id] || 0) > 0);
+  const quantity = owned.reduce((sum, card) => sum + Number(collectionQuantities[card.id] || 0), 0);
+  const cardValue = owned.reduce((sum, card) => sum + Number(card.value || 0) * Number(collectionQuantities[card.id] || 0), 0);
+  const vaultValue = vaultAssets.reduce((sum, asset) => sum + Number(asset.marketValue || asset.value || 0) * Number(asset.quantity || 1), 0);
+  const highest = [...owned].sort((a, b) => Number(b.value || 0) - Number(a.value || 0))[0];
+  return <ScrollView style={s.page} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+    <View style={s.heading}><View><Text style={s.title}>My Registry</Text><Text style={s.kicker}>INDEX VALUE METRICS</Text></View><View style={s.coin}><Text style={s.coinText}>C</Text></View></View>
+    <CollectionSectionTabs active="MyCollection" navigate={navigate}/>
+    <View style={s.hero}><Text style={s.micro}>ESTIMATED PORTFOLIO VALUE</Text><Text style={s.value}>€{(cardValue + vaultValue).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</Text><View style={s.divider}/><View style={s.heroStats}><Metric label="TOTAL CARDS" value={`${quantity} Owned`}/><Metric label="GRADED COPIES" value={`${vaultAssets.filter((a)=>a.type === "graded").length} Graded`} accent/></View></View>
+    <Text style={s.section}>QUICK ACCESS</Text><View style={s.quickGrid}><Quick label="All Cards" meta={`${owned.length} items tracked`} icon="▣" onPress={()=>navigate("CollectionAll")}/><Quick label="Binders" meta={`${binders.length} custom sets`} icon="▥" onPress={()=>navigate("Binders")}/><Quick wide label="Registry Wishlist" meta={`${wishlistItems.length} priority chases`} icon="♡" onPress={()=>navigate("Wishlist")}/></View>
+    {highest && <TouchableOpacity style={s.highest} onPress={()=>navigate("CardDetail",{cardId:highest.id})}><Text style={s.highestLabel}>HIGHEST VALUED SPECIMEN</Text><View style={s.highestRow}><Image source={{uri:highest.image}} style={s.thumb}/><View style={s.highestInfo}><Text style={s.highestName}>{highest.name}</Text><Text style={s.cardMeta}>{highest.setName} · #{highest.number}</Text><Text style={s.grade}>RAW</Text></View><Text style={s.highestValue}>€{Number(highest.value||0).toFixed(2)}</Text></View></TouchableOpacity>}
+  </ScrollView>;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 16 },
-  back: { color: colors.text, fontSize: 28, fontWeight: '300' },
-  addBtn: {
-    width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.borderStrong,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  addPlus: { color: colors.text, fontSize: 18 },
-  title: { color: colors.text, fontSize: 22, fontWeight: '500', marginTop: 20 },
-  inputRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
-    borderRadius: 12, paddingHorizontal: 14, marginTop: 16, height: 46,
-  },
-  searchIcon: { color: colors.textSecondary, fontSize: 16, marginRight: 8 },
-  input: { flex: 1, color: colors.text, fontSize: 14 },
-  sectionLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1.5, marginTop: 26, marginBottom: 8 },
-  rowItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  rowIcon: { color: colors.textSecondary, fontSize: 14, width: 24 },
-  rowText: { color: colors.text, fontSize: 15 },
-  scanBtn: {
-    flexDirection: 'row', backgroundColor: colors.purple, borderRadius: 24, paddingVertical: 15,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 30,
-  },
-  scanIcon: { color: colors.text, fontSize: 14, marginRight: 8 },
-  scanText: { color: colors.text, fontSize: 14, fontWeight: '600' },
-});
+function Metric({label,value,accent}){return <View><Text style={s.micro}>{label}</Text><Text style={[s.metricValue,accent&&s.accent]}>{value}</Text></View>}
+function Quick({label,meta,icon,onPress,wide}){return <TouchableOpacity style={[s.quick,wide&&s.quickWide]} onPress={onPress}><View style={s.quickIcon}><Text style={s.quickIconText}>{icon}</Text></View><View><Text style={s.quickLabel}>{label}</Text><Text style={s.quickMeta}>{meta}</Text></View></TouchableOpacity>}
+const s=StyleSheet.create({page:{flex:1,backgroundColor:colors.bg},content:{paddingTop:24,paddingBottom:42},heading:{paddingHorizontal:24,flexDirection:"row",alignItems:"center",justifyContent:"space-between"},title:{color:colors.text,fontSize:27,fontWeight:"800"},kicker:{color:colors.purple,fontSize:9,fontWeight:"800",letterSpacing:1.2,marginTop:3},coin:{width:36,height:36,borderRadius:18,borderWidth:1,borderColor:colors.purple,alignItems:"center",justifyContent:"center"},coinText:{color:colors.purple,fontWeight:"800"},hero:{marginHorizontal:24,marginTop:18,padding:18,borderRadius:16,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border},micro:{color:colors.textTertiary,fontSize:8,fontWeight:"700",letterSpacing:.5},value:{color:colors.text,fontSize:31,fontWeight:"800",marginTop:8},divider:{height:1,backgroundColor:colors.border,marginVertical:15},heroStats:{flexDirection:"row",justifyContent:"space-between"},metricValue:{color:colors.text,fontSize:14,fontWeight:"800",marginTop:5},accent:{color:colors.purple},section:{marginHorizontal:24,color:colors.textSecondary,fontSize:10,fontWeight:"800",marginTop:20,marginBottom:8},quickGrid:{paddingHorizontal:24,flexDirection:"row",flexWrap:"wrap",gap:8},quick:{width:"48.7%",minHeight:66,borderRadius:13,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,padding:11,flexDirection:"row",alignItems:"center",gap:10},quickWide:{width:"100%"},quickIcon:{width:29,height:29,borderRadius:8,backgroundColor:colors.purpleSoft,alignItems:"center",justifyContent:"center"},quickIconText:{color:colors.purple,fontSize:16},quickLabel:{color:colors.text,fontSize:11,fontWeight:"700"},quickMeta:{color:colors.textTertiary,fontSize:8,marginTop:3},highest:{marginHorizontal:24,marginTop:17,padding:13,borderRadius:15,borderWidth:1,borderColor:colors.purple,backgroundColor:colors.surface},highestLabel:{color:colors.purple,fontSize:8,fontWeight:"800"},highestRow:{flexDirection:"row",alignItems:"center",marginTop:10},thumb:{width:47,height:64,borderRadius:5,backgroundColor:colors.card},highestInfo:{flex:1,marginLeft:11},highestName:{color:colors.text,fontSize:12,fontWeight:"800"},cardMeta:{color:colors.textTertiary,fontSize:8,marginTop:3},grade:{alignSelf:"flex-start",color:colors.bg,backgroundColor:colors.purple,fontSize:7,fontWeight:"800",paddingHorizontal:5,paddingVertical:2,borderRadius:3,marginTop:5},highestValue:{color:colors.purple,fontSize:12,fontWeight:"800"}});

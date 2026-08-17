@@ -1,116 +1,15 @@
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors } from "../theme";
-import TopBar from "../components/TopBar";
-import { historyDateLabel } from "../lib/history";
-const verb = {
-  "card-added": "Added",
-  "card-removed": "Removed",
-  "quantity-changed": "Quantity changed",
-  "binder-created": "Created binder",
-  "binder-completed": "Completed",
-  "wishlist-acquired": "Moved to collection",
-  "milestone-unlocked": "Milestone unlocked",
-  "graded-asset-added": "Added graded asset",
-  "graded-asset-removed": "Removed graded asset",
-  "sealed-asset-added": "Added sealed asset",
-  "sealed-asset-removed": "Removed sealed asset",
-  "vault-quantity-changed": "Vault quantity changed",
-  "purchase-information-updated": "Purchase information updated",
-  "manual-valuation-changed": "Manual valuation changed",
-  "wishlist-target-changed": "Wishlist target changed",
-};
-export default function CollectionHistoryScreen({
-  navigate,
-  goBack,
-  historyEvents = [],
-}) {
-  const groups = useMemo(
-    () =>
-      historyEvents
-        .slice()
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .reduce((map, event) => {
-          const label = historyDateLabel(event.timestamp);
-          (map[label] ||= []).push(event);
-          return map;
-        }, {}),
-    [historyEvents],
-  );
-  return (
-    <ScrollView style={s.container}>
-      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
-      <View style={s.content}>
-        <Text style={s.label}>COLLECTION HISTORY</Text>
-        <Text style={s.title}>The story of your collection.</Text>
-        {Object.keys(groups).length ? (
-          Object.entries(groups).map(([date, events]) => (
-            <View key={date} style={s.group}>
-              <Text style={s.date}>{date}</Text>
-              {events.map((event) => (
-                <View key={event.id} style={s.event}>
-                  <Text style={s.verb}>{verb[event.type] || event.type}</Text>
-                  <Text style={s.name}>
-                    {event.name ||
-                      event.binderName ||
-                      event.milestoneTitle ||
-                      "Collection"}
-                  </Text>
-                  {event.finish ? (
-                    <Text style={s.meta}>{event.finish}</Text>
-                  ) : null}
-                  {event.oldValue !== undefined ? (
-                    <Text style={s.meta}>
-                      {event.oldValue} → {event.newValue}
-                    </Text>
-                  ) : null}
-                </View>
-              ))}
-            </View>
-          ))
-        ) : (
-          <Text style={s.empty}>
-            Meaningful collection activity will appear here as you add cards and
-            build binders.
-          </Text>
-        )}
-      </View>
-    </ScrollView>
-  );
+import CollectionSectionTabs from "../components/CollectionSectionTabs";
+
+const LABELS={"card-added":"Added","card-removed":"Removed","quantity-changed":"Updated quantity for","binder-created":"Created binder","binder-completed":"Completed set","wishlist-acquired":"Acquired","milestone-unlocked":"Unlocked milestone","graded-asset-added":"Added graded asset","sealed-asset-added":"Added sealed asset","graded-asset-removed":"Removed graded asset","sealed-asset-removed":"Removed sealed asset"};
+export default function CollectionHistoryScreen({navigate,historyEvents=[]}){
+  const events=useMemo(()=>historyEvents.slice().sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)),[historyEvents]);
+  return <ScrollView style={s.page} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+    <View style={s.heading}><View><Text style={s.title}>Index Timeline</Text><Text style={s.kicker}>ACQUISITION HISTORY</Text></View><View style={s.coin}><Text style={s.coinText}>C</Text></View></View>
+    <CollectionSectionTabs active="CollectionHistory" navigate={navigate}/>
+    <View style={s.timeline}>{events.length ? events.map((event,index)=>{const positive=!String(event.type).includes("removed");const name=event.name||event.binderName||event.milestoneTitle||"Collection";return <View key={event.id||index} style={s.event}><View style={[s.dot,{backgroundColor:positive?colors.purple:colors.red}]}/><View style={s.eventBody}><Text style={s.eventTitle}>{LABELS[event.type]||"Updated"} {name}</Text><Text style={s.eventMeta}>{event.finish||event.note||"Collection registry updated"}</Text><Text style={s.date}>{event.timestamp?new Date(event.timestamp).toLocaleString():"Recently"}</Text></View>{event.newValue!==undefined&&<Text style={[s.change,!positive&&s.negative]}>{positive?"+":""}{event.newValue}</Text>}</View>}) : <View style={s.emptyCard}><Text style={s.emptyTitle}>No registry history yet</Text><Text style={s.emptyText}>Card additions, binder milestones and vault activity will appear here automatically.</Text></View>}</View>
+  </ScrollView>
 }
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 24, paddingBottom: 50 },
-  label: {
-    color: colors.purple,
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 2.2,
-    marginTop: 22,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: "300",
-    marginTop: 14,
-    marginBottom: 38,
-  },
-  group: { marginBottom: 34 },
-  date: {
-    color: colors.textTertiary,
-    fontSize: 9,
-    fontWeight: "700",
-    letterSpacing: 1.8,
-    marginBottom: 8,
-  },
-  event: { borderTopWidth: 1, borderColor: colors.border, paddingVertical: 15 },
-  verb: {
-    color: colors.purple,
-    fontSize: 9,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  name: { color: colors.text, fontSize: 17, marginTop: 5 },
-  meta: { color: colors.textSecondary, fontSize: 10, marginTop: 3 },
-  empty: { color: colors.textSecondary, fontSize: 12, lineHeight: 19 },
-});
+const s=StyleSheet.create({page:{flex:1,backgroundColor:colors.bg},content:{paddingTop:24,paddingBottom:42},heading:{paddingHorizontal:24,flexDirection:"row",alignItems:"center",justifyContent:"space-between"},title:{color:colors.text,fontSize:27,fontWeight:"800"},kicker:{color:colors.purple,fontSize:9,fontWeight:"800",letterSpacing:1.2,marginTop:3},coin:{width:34,height:34,borderRadius:17,borderWidth:1,borderColor:colors.purple,alignItems:"center",justifyContent:"center"},coinText:{color:colors.purple,fontWeight:"800",fontSize:10},timeline:{marginHorizontal:24,marginTop:22,paddingLeft:15,borderLeftWidth:1,borderLeftColor:colors.border},event:{minHeight:82,borderBottomWidth:1,borderBottomColor:colors.border,flexDirection:"row",alignItems:"flex-start",paddingVertical:14},dot:{position:"absolute",left:-20,top:18,width:8,height:8,borderRadius:4},eventBody:{flex:1},eventTitle:{color:colors.text,fontSize:11,fontWeight:"800"},eventMeta:{color:colors.textSecondary,fontSize:8,lineHeight:13,marginTop:4},date:{color:colors.textTertiary,fontSize:7,marginTop:5},change:{color:colors.purple,fontSize:8,fontWeight:"800",backgroundColor:colors.purpleSoft,paddingHorizontal:6,paddingVertical:4,borderRadius:5,marginLeft:8},negative:{color:colors.red},emptyCard:{marginLeft:-15,padding:18,borderRadius:14,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border},emptyTitle:{color:colors.text,fontSize:15,fontWeight:"800"},emptyText:{color:colors.textSecondary,fontSize:10,lineHeight:16,marginTop:7}});
