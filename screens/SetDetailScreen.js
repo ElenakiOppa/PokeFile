@@ -30,16 +30,20 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
   const tierQuote = liveValue.valuations?.[tier.toLowerCase()];
   const valueLabel = liveValue.status === 'loading'
     ? 'Updating…'
-    : liveValue.status === 'error' || !tierQuote?.priced
+    : liveValue.status === 'error' || !tierQuote?.complete
       ? 'Unavailable'
       : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tierQuote.value);
-  const collectedValue = requirements.reduce((sum, requirement) => {
-    if (!isOwned(collectionQuantities, requirement)) return sum;
-    return sum + Number(tierQuote?.requirementPrices?.[String(requirement.collectibleKey || requirement.id)] || 0);
-  }, 0);
+  const ownedRequirements = requirements.filter((requirement) => isOwned(collectionQuantities, requirement));
+  const collectedQuote = ownedRequirements.reduce((result, requirement) => {
+    const price = tierQuote?.requirementPrices?.[String(requirement.collectibleKey || requirement.id)];
+    if (price == null) return { ...result, missing: result.missing + 1 };
+    return { ...result, value: result.value + Number(price) };
+  }, { value: 0, missing: 0 });
   const collectedValueLabel = liveValue.status === 'loading'
     ? 'Updating…'
-    : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(collectedValue);
+    : liveValue.status === 'error' || collectedQuote.missing > 0
+      ? 'Unavailable'
+      : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(collectedQuote.value);
   const released = set?.releaseDate ? new Date(set.releaseDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Release date unavailable';
 
   if (!set) return <View style={styles.screen}><Text style={styles.missing}>Set unavailable</Text></View>;
