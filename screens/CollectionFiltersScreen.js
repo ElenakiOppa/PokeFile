@@ -3,24 +3,35 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '../theme';
 import FilterChip from '../components/FilterChip';
-import { SETS } from '../data';
+import { CARD_LIBRARY, SETS } from '../data';
 
-const SET_OPTIONS = ['All Sets', ...SETS.slice(0, 8).map((set) => set.name)];
-const RARITY = ['All', 'Rare', 'Ultra Rare', 'Secret Rare'];
-const CONDITION = ['All', 'Near Mint', 'Lightly Played', 'Damaged'];
+const SET_OPTIONS = ['All Sets', ...Array.from(new Set(SETS.map((set) => set.name).filter(Boolean)))];
+const RARITY = ['All', ...Array.from(new Set(CARD_LIBRARY.map((card) => card.rarity).filter(Boolean))).sort()];
+const CONDITION = ['All', 'Raw', 'Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged', 'PSA 10', 'PSA 9', 'PSA 8'];
 const OWNERSHIP = ['All Cards', 'Owned', 'Missing'];
+const DEFAULTS = { set: 'All Sets', rarity: 'All', condition: 'All', ownership: 'Owned' };
 
-export default function CollectionFiltersScreen({ goBack }) {
-  const [set, setSet] = useState('All Sets');
-  const [rarity, setRarity] = useState('All');
-  const [condition, setCondition] = useState('All');
-  const [ownership, setOwnership] = useState('All Cards');
+export default function CollectionFiltersScreen({ goBack, collectionFilters = DEFAULTS, setCollectionFilters = () => {} }) {
+  const [set, setSet] = useState(collectionFilters.set || DEFAULTS.set);
+  const [rarity, setRarity] = useState(collectionFilters.rarity || DEFAULTS.rarity);
+  const [condition, setCondition] = useState(collectionFilters.condition || DEFAULTS.condition);
+  const [ownership, setOwnership] = useState(collectionFilters.ownership || DEFAULTS.ownership);
+  const clear = () => {
+    setSet(DEFAULTS.set);
+    setRarity(DEFAULTS.rarity);
+    setCondition(DEFAULTS.condition);
+    setOwnership(DEFAULTS.ownership);
+  };
+  const apply = () => {
+    setCollectionFilters({ set, rarity, condition, ownership });
+    goBack();
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>FILTERS</Text>
-        <TouchableOpacity onPress={goBack}>
+        <TouchableOpacity onPress={clear}>
           <Text style={styles.clear}>CLEAR</Text>
         </TouchableOpacity>
       </View>
@@ -47,7 +58,7 @@ export default function CollectionFiltersScreen({ goBack }) {
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.applyBtn} onPress={goBack}>
+      <TouchableOpacity style={styles.applyBtn} onPress={apply}>
         <Text style={styles.applyText}>Apply Filters</Text>
       </TouchableOpacity>
     </View>

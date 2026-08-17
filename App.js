@@ -66,6 +66,12 @@ const DEFAULT_PREFERENCES = {
     binderReminders: true,
   },
 };
+const DEFAULT_COLLECTION_FILTERS = {
+  set: "All Sets",
+  rarity: "All",
+  condition: "All",
+  ownership: "Owned",
+};
 
 const { width } = Dimensions.get("window");
 
@@ -409,6 +415,9 @@ export default function App() {
   const [valueSnapshots, setValueSnapshots] = useState([]);
   const [priceAlerts, setPriceAlerts] = useState([]);
   const [rawAcquisitions, setRawAcquisitions] = useState({});
+  const [collectionFilters, setCollectionFilters] = useState(
+    DEFAULT_COLLECTION_FILTERS,
+  );
   const [userProfile, setUserProfile] = useState({
     displayName: "",
     email: "",
@@ -1143,6 +1152,8 @@ export default function App() {
     priceAlerts,
     rawAcquisitions,
     updateRawAcquisition,
+    collectionFilters,
+    setCollectionFilters,
     logOut,
   };
   const Screen =

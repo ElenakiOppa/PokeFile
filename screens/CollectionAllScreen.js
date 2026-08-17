@@ -22,18 +22,38 @@ export default function CollectionAllScreen({
   navigate,
   collectionQuantities = {},
   vaultAssets = [],
+  rawAcquisitions = {},
+  collectionFilters = {},
+  setCollectionFilters = () => {},
 }) {
   const [query, setQuery] = useState("");
-  const cards = CARD_LIBRARY.filter(
-    (card) => Number(collectionQuantities[card.id] || 0) > 0,
-  ).filter((card) => `${card.name} ${card.setName || ""} ${card.number || ""}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const quantityFor = (card) => Number(collectionQuantities[card.id] || 0);
+  const activeFilterCount = [
+    collectionFilters.set && collectionFilters.set !== "All Sets",
+    collectionFilters.rarity && collectionFilters.rarity !== "All",
+    collectionFilters.condition && collectionFilters.condition !== "All",
+    collectionFilters.ownership && collectionFilters.ownership !== "Owned",
+  ].filter(Boolean).length;
+  const cards = CARD_LIBRARY.filter((card) => {
+    const quantity = quantityFor(card);
+    const ownership = collectionFilters.ownership || "Owned";
+    if (ownership === "Owned" && quantity <= 0) return false;
+    if (ownership === "Missing" && quantity > 0) return false;
+    if (collectionFilters.set && collectionFilters.set !== "All Sets" && card.setName !== collectionFilters.set) return false;
+    if (collectionFilters.rarity && collectionFilters.rarity !== "All" && card.rarity !== collectionFilters.rarity) return false;
+    if (collectionFilters.condition && collectionFilters.condition !== "All") {
+      if (quantity <= 0 || (rawAcquisitions[card.id]?.condition || "Raw") !== collectionFilters.condition) return false;
+    }
+    return `${card.name} ${card.setName || ""} ${card.number || ""}`.toLowerCase().includes(query.trim().toLowerCase());
+  });
+  const ownedCount = CARD_LIBRARY.filter((card) => quantityFor(card) > 0).length;
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.pageHeader}>
         <View>
           <Text style={styles.pageEyebrow}>YOUR LIBRARY</Text>
           <Text style={styles.pageTitle}>Collection</Text>
-          <Text style={styles.pageCount}>{cards.length} owned cards</Text>
+          <Text style={styles.pageCount}>{cards.length} cards shown · {ownedCount} owned</Text>
         </View>
         <TouchableOpacity style={styles.vaultPill} onPress={() => navigate("Vault")}>
           <Text style={styles.vaultPillText}>VAULT</Text>
@@ -53,6 +73,7 @@ export default function CollectionAllScreen({
         </View>
         <TouchableOpacity style={styles.searchFilter} onPress={() => navigate("CollectionFilters")}>
           <Text style={styles.searchFilterText}>≡</Text>
+          {activeFilterCount > 0 && <View style={styles.filterBadge}><Text style={styles.filterBadgeText}>{activeFilterCount}</Text></View>}
         </TouchableOpacity>
       </View>
 
@@ -60,10 +81,15 @@ export default function CollectionAllScreen({
         <View style={styles.emptyWrap}>
           <EmptyState
             icon="◇"
-            title="Your collection is empty"
-            subtitle="Open a set and tap Collect on any card to start."
-            buttonLabel="Browse sets"
-            onButtonPress={() => navigate("AllSets")}
+            title={ownedCount > 0 || activeFilterCount > 0 || query ? "No cards match" : "Your collection is empty"}
+            subtitle={ownedCount > 0 || activeFilterCount > 0 || query ? "Try clearing the filters or changing your search." : "Open a set and tap Collect on any card to start."}
+            buttonLabel={ownedCount > 0 || activeFilterCount > 0 || query ? "Clear filters" : "Browse sets"}
+            onButtonPress={() => {
+              if (ownedCount > 0 || activeFilterCount > 0 || query) {
+                setQuery("");
+                setCollectionFilters({ set: "All Sets", rarity: "All", condition: "All", ownership: "Owned" });
+              } else navigate("AllSets");
+            }}
           />
         </View>
       ) : (
@@ -116,6 +142,8 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, color: colors.text, fontSize: 12, paddingVertical: 0 },
   searchFilter: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
   searchFilterText: { color: colors.purple, fontSize: 18, transform: [{ rotate: "90deg" }] },
+  filterBadge: { position: "absolute", top: -5, right: -5, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: colors.purple, alignItems: "center", justifyContent: "center" },
+  filterBadgeText: { color: colors.bg, fontSize: 9, fontWeight: "800" },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
