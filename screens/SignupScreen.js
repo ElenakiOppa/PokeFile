@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import { colors } from '../theme';
 
 export default function SignUpScreen({ navigate, goBack }) {
   const [name, setName] = useState('');
@@ -36,7 +37,7 @@ export default function SignUpScreen({ navigate, goBack }) {
           <Field label="PASSWORD"><View style={styles.passwordBox}><TextInput value={password} onChangeText={setPassword} placeholder="At least 6 characters" placeholderTextColor="#71717A" style={styles.passwordInput} secureTextEntry={!showPassword} autoCapitalize="none" /><TouchableOpacity onPress={() => setShowPassword((value) => !value)}><Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={16} color="#A1A1AA" /></TouchableOpacity></View></Field>
         </View>
         <TouchableOpacity style={styles.termsRow} onPress={() => setAgreed((value) => !value)}>
-          <View style={[styles.checkbox, agreed && styles.checkboxActive]}>{agreed ? <Ionicons name="checkmark" size={11} color="#D4AF37" /> : null}</View>
+          <View style={[styles.checkbox, agreed && styles.checkboxActive]}>{agreed ? <Ionicons name="checkmark" size={11} color={colors.purple} /> : null}</View>
           <Text style={styles.terms}>I agree to the <Text style={styles.goldUnderline}>Terms of Service</Text> and <Text style={styles.goldUnderline}>Privacy Policy</Text></Text>
         </TouchableOpacity>
         <View style={styles.actions}>
