@@ -468,6 +468,34 @@ const detectSetCategory = (set = {}) => {
   return "English";
 };
 
+const inferSetSeries = (set = {}) => {
+  const supplied = String(set.series || "").trim();
+  if (supplied && !/^(other|unknown)$/i.test(supplied)) return supplied;
+
+  const id = String(set.id || set.code || "").toLowerCase().replace(/_ja$/, "");
+  const name = String(set.name || "").toLowerCase();
+
+  if (detectSetCategory(set) === "Pocket Expansion") return "Pokémon TCG Pocket";
+  if (/^me\d|^me\dpt\d|^mep$|^m\d|^mc$|^mp1$|^m2a$|^mb[gd]$|^m1[sl]$|^ma$|^mp$/.test(id)) return "Mega Evolution";
+  if (/^[rz]?sv|^svp$|^sve$|^sv[od]m$/.test(id)) return "Scarlet & Violet";
+  if (/^swsh|^pgo$|^cel25/.test(id)) return "Sword & Shield";
+  if (/^sm|^smp$|^sma$|^det1$|^tk10/.test(id)) return "Sun & Moon";
+  if (/^xy|^xyp$|^g1$|^dc1$|^cp\d|^tk[6789]/.test(id)) return "XY";
+  if (/^bw|^bwp$|^dv1$|^tk5/.test(id)) return "Black & White";
+  if (/^hgss|^hsp$|^col1$|^tk4/.test(id)) return "HeartGold & SoulSilver";
+  if (/^pl/.test(id)) return "Platinum";
+  if (/^dp|^dpp$|^tk3/.test(id)) return "Diamond & Pearl";
+  if (/^ex|^np$|^tk[12]/.test(id)) return "EX";
+  if (/^ecard/.test(id)) return "e-Card";
+  if (/^neo/.test(id)) return "Neo";
+  if (/^gym/.test(id)) return "Gym";
+  if (/^base|^si1$/.test(id)) return "Original Series";
+  if (/^pop/.test(id)) return "POP Series";
+  if (/^mcd|^cl[vcb]$|^fut20$|^ru1$|^wb1$|^bp$|^misc/.test(id) || /collection|classic/.test(name)) return "Special Collections";
+
+  return "Special Collections";
+};
+
 const unavailableSet = {
   id: "data-unavailable",
   code: "unknown",
@@ -741,7 +769,7 @@ const normalizeSet = (set) => {
     id: String(set.id),
     code: String(set.code || set.id),
     name: String(set.name),
-    series: String(set.series || "Mega Evolution"),
+    series: inferSetSeries(set),
     language: String(set.language || category),
     category,
     releaseDate: String(set.releaseDate || "2025-01-01"),

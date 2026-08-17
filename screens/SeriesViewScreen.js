@@ -9,7 +9,9 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 54) / 2;
 
 const getProviderValuation = (set) => {
-  const pricedRequirements = getSetRequirements(set, 'master')
+  // A set valuation represents one canonical printing of every numbered card.
+  // Master requirements include parallel finishes and would inflate this value.
+  const pricedRequirements = getSetRequirements(set, 'complete')
     .map((card) => Number(card.value ?? card.price))
     .filter((value) => Number.isFinite(value) && value > 0);
 
@@ -26,6 +28,8 @@ const formatValuation = (value) => value == null
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+
+const seriesLabel = (name) => /series$/i.test(name) ? name : `${name} Series`;
 
 export default function SeriesViewScreen({ navigate, params = {} }) {
   const groups = useMemo(() => {
@@ -64,7 +68,7 @@ export default function SeriesViewScreen({ navigate, params = {} }) {
           return (
             <View key={group.name} style={styles.group}>
               <TouchableOpacity style={[styles.seriesHeader, open && styles.seriesHeaderOpen]} onPress={() => setExpanded(open ? '' : group.name)} activeOpacity={0.75}>
-                <Text style={[styles.seriesName, open && styles.seriesNameOpen]}>{group.name}</Text>
+                <Text style={[styles.seriesName, open && styles.seriesNameOpen]}>{seriesLabel(group.name)}</Text>
                 <Ionicons name={open ? 'chevron-down' : 'chevron-forward'} size={15} color={open ? colors.purple : '#a1a1aa'} />
               </TouchableOpacity>
               {open ? (
@@ -109,6 +113,6 @@ const styles = StyleSheet.create({
   setCard: { width: CARD_WIDTH, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', padding: 12, gap: 7 },
   logoWell: { width: '100%', height: 70, alignItems: 'center', justifyContent: 'center' },
   logo: { width: '88%', height: 61 },
-  setName: { color: '#f4f4f5', fontSize: 12, fontWeight: '600' },
-  valuation: { color: '#a1a1aa', fontSize: 10 },
+  setName: { color: '#f4f4f5', fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  valuation: { color: '#a1a1aa', fontSize: 10, textAlign: 'center' },
 });
