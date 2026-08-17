@@ -416,6 +416,9 @@ export default function App() {
   const [systemColorScheme, setSystemColorScheme] = useState(
     Appearance.getColorScheme() || "dark",
   );
+  const effectiveTheme = preferences.theme === "System"
+    ? (systemColorScheme === "light" ? "Light" : "Dark")
+    : preferences.theme;
   const [storageReady, setStorageReady] = useState(false);
   const [splashMinimumElapsed, setSplashMinimumElapsed] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -432,6 +435,13 @@ export default function App() {
     });
     return () => subscription.remove();
   }, []);
+
+  useEffect(() => {
+    StatusBar.setBarStyle(
+      effectiveTheme === "Light" ? "dark-content" : "light-content",
+      true,
+    );
+  }, [effectiveTheme]);
 
   useEffect(() => {
     let active = true;
@@ -1094,9 +1104,6 @@ export default function App() {
     if (error) throw error;
   };
 
-  const effectiveTheme = preferences.theme === "System"
-    ? (systemColorScheme === "light" ? "Light" : "Dark")
-    : preferences.theme;
   setThemeSettings({
     ...preferences,
     theme: effectiveTheme,
@@ -1148,14 +1155,19 @@ export default function App() {
     >
       <SafeAreaProvider>
         <SafeAreaView
-          style={styles.safeArea}
+          style={[
+            styles.safeArea,
+            { backgroundColor: effectiveTheme === "Light" ? "#F7F7F9" : "#000000" },
+          ]}
           edges={showBottomNav ? ["top"] : ["top", "bottom"]}
         >
           <StatusBar
+            key={effectiveTheme}
             barStyle={
               effectiveTheme === "Light" ? "dark-content" : "light-content"
             }
-            backgroundColor={colors.bg}
+            backgroundColor={effectiveTheme === "Light" ? "#F7F7F9" : "#000000"}
+            animated
           />
           <View style={styles.appRoot} {...panResponder.panHandlers}>
             <Animated.View
