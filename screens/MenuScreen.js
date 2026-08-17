@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 import { useAppContext } from '../AppContext';
 import UserAvatar from '../components/UserAvatar';
@@ -18,6 +19,7 @@ const ITEMS = [
 ];
 
 export default function MenuScreen({ navigate, goBack }) {
+  const insets = useSafeAreaInsets();
   const { userProfile, logOut } = useAppContext();
   const open = (route) => {
     goBack?.();
@@ -33,7 +35,7 @@ export default function MenuScreen({ navigate, goBack }) {
   };
 
   return (
-    <View style={s.page}>
+    <View style={[s.page, { paddingTop: insets.top + 12, paddingBottom: Math.max(insets.bottom, 16) }]}>
       <View style={s.header}>
         <TouchableOpacity style={s.profile} onPress={() => open('Profile')} activeOpacity={0.75}>
           <UserAvatar size={48} />
@@ -74,7 +76,7 @@ export default function MenuScreen({ navigate, goBack }) {
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 },
+  page: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 16 },
   header: { height: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   profile: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 },
   name: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '700' },
