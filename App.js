@@ -413,6 +413,9 @@ export default function App() {
     createdAt: "",
   });
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [systemColorScheme, setSystemColorScheme] = useState(
+    Appearance.getColorScheme() || "dark",
+  );
   const [storageReady, setStorageReady] = useState(false);
   const [splashMinimumElapsed, setSplashMinimumElapsed] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -421,6 +424,13 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => setSplashMinimumElapsed(true), 900);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemColorScheme(colorScheme || "dark");
+    });
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
@@ -1084,11 +1094,12 @@ export default function App() {
     if (error) throw error;
   };
 
+  const effectiveTheme = preferences.theme === "System"
+    ? (systemColorScheme === "light" ? "Light" : "Dark")
+    : preferences.theme;
   setThemeSettings({
     ...preferences,
-    theme: preferences.theme === "System"
-      ? (Appearance.getColorScheme() === "light" ? "Light" : "Dark")
-      : preferences.theme,
+    theme: effectiveTheme,
   });
   const screenProps = {
     navigate,
@@ -1142,7 +1153,7 @@ export default function App() {
         >
           <StatusBar
             barStyle={
-              preferences.theme === "Light" ? "dark-content" : "light-content"
+              effectiveTheme === "Light" ? "dark-content" : "light-content"
             }
             backgroundColor={colors.bg}
           />

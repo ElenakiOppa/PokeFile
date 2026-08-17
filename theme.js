@@ -37,6 +37,20 @@ export const colors = new Proxy({}, { get: (_, key) => palette()[key] });
 const semanticColor = (value) => {
   if (typeof value !== 'string') return value;
   const current = palette();
+  const normalized = value.toLowerCase();
+  // Figma and legacy Pokéfile screens use several literal shades for the
+  // same semantic roles. Translate every known neutral through the active
+  // palette so an already-created StyleSheet cannot retain the old theme.
+  const semanticHex = {
+    '#070708': 'bg', '#080808': 'bg', '#08080a': 'bg', '#09090b': 'bg', '#0a0a0d': 'bg',
+    '#0d0d0d': 'surface', '#101014': 'surface', '#111114': 'surface', '#121212': 'surface', '#161616': 'surface',
+    '#18181b': 'card', '#27272a': 'card', '#2a2a2a': 'card',
+    '#f4f4f5': 'text', '#ffffff': 'text', '#fff': 'text',
+    '#a1a1aa': 'textSecondary', '#bcb8af': 'textSecondary', '#c7c3b9': 'textSecondary',
+    '#71717a': 'textTertiary', '#69655f': 'textTertiary', '#5c5954': 'textTertiary', '#3f3f46': 'textTertiary',
+    '#d4af37': 'purple', '#d6b42c': 'purple', '#8b5cf6': 'purple',
+  };
+  if (semanticHex[normalized]) return current[semanticHex[normalized]];
   const semanticKey = Object.keys(DARK).find((key) => DARK[key].toLowerCase() === value.toLowerCase());
   if (semanticKey) return current[semanticKey];
   if (value.toLowerCase() === BASE_ACCENT.toLowerCase()) return current.purple;
