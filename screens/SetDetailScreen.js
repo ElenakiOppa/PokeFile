@@ -33,7 +33,13 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
     : liveValue.status === 'error' || !tierQuote?.priced
       ? 'Unavailable'
       : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tierQuote.value);
-  const graded = vaultAssets.filter((asset) => asset.type === 'graded' && (asset.setId === set?.id || asset.setName === set?.name)).length;
+  const collectedValue = requirements.reduce((sum, requirement) => {
+    if (!isOwned(collectionQuantities, requirement)) return sum;
+    return sum + Number(tierQuote?.requirementPrices?.[String(requirement.collectibleKey || requirement.id)] || 0);
+  }, 0);
+  const collectedValueLabel = liveValue.status === 'loading'
+    ? 'Updating…'
+    : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(collectedValue);
   const released = set?.releaseDate ? new Date(set.releaseDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Release date unavailable';
 
   if (!set) return <View style={styles.screen}><Text style={styles.missing}>Set unavailable</Text></View>;
@@ -73,8 +79,8 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
         </View>
 
         <View style={styles.stats}>
-          <Stat label={`LIVE ${tier.toUpperCase()} VALUE`} value={valueLabel} />
-          <Stat label="GRADED GEMS" value={`${graded} Cards`} />
+          <Stat label="FULL SET VALUE" value={valueLabel} />
+          <Stat label="YOUR COLLECTED VALUE" value={collectedValueLabel} />
         </View>
 
         <View style={styles.actions}>

@@ -7,7 +7,7 @@ const corsHeaders = {
 type AuditRequest =
   | { action: "search-expansions"; query: string }
   | { action: "search-cards"; query: string; page?: number }
-  | { action: "expansion-cards"; expansionId: string; sort?: string }
+  | { action: "expansion-cards"; expansionId: string; sort?: string; page?: number }
   | { action: "expansion-products"; expansionId: string; sort?: string }
   | { action: "card"; cardId: string };
 
@@ -48,7 +48,8 @@ const providerPath = (payload: AuditRequest) => {
     case "expansion-cards": {
       const id = cleanSegment(payload.expansionId, "expansion ID");
       const sort = payload.sort && SAFE_SORTS.has(payload.sort) ? payload.sort : "price_highest";
-      return `/episodes/${id}/cards?sort=${encodeURIComponent(sort)}`;
+      const page = Math.max(1, Number(payload.page) || 1);
+      return `/episodes/${id}/cards?sort=${encodeURIComponent(sort)}&page=${page}`;
     }
     case "expansion-products": {
       const id = cleanSegment(payload.expansionId, "expansion ID");
