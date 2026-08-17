@@ -6,7 +6,9 @@ import { SETS } from '../data';
 import { getSetRequirements } from '../lib/collectibles';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 54) / 2;
+const HORIZONTAL_PADDING = 16;
+const GRID_GAP = 12;
+const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - GRID_GAP) / 2;
 
 const getProviderValuation = (set) => {
   // A set valuation represents one canonical printing of every numbered card.
@@ -103,13 +105,13 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.purple, fontSize: 11, lineHeight: 14, fontWeight: '600' },
   title: { color: '#f4f4f5', fontSize: 18, lineHeight: 23, fontWeight: '700', marginTop: 2 },
   scroll: { flex: 1 },
-  content: { padding: 16, gap: 16, paddingBottom: 28 },
+  content: { padding: HORIZONTAL_PADDING, gap: 16, paddingBottom: 28 },
   group: { gap: 12 },
   seriesHeader: { minHeight: 42, paddingHorizontal: 12, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   seriesHeaderOpen: { borderColor: 'rgba(212,175,55,0.25)' },
   seriesName: { color: '#f4f4f5', fontSize: 14, fontWeight: '700' },
   seriesNameOpen: { color: colors.purple },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
   setCard: { width: CARD_WIDTH, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', padding: 12, gap: 7 },
   logoWell: { width: '100%', height: 70, alignItems: 'center', justifyContent: 'center' },
   logo: { width: '88%', height: 61 },
