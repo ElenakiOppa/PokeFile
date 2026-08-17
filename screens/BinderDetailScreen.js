@@ -205,6 +205,29 @@ export default function BinderDetailScreen({
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[
+              styles.collectPageButton,
+              allPageCardsCollected && styles.collectPageButtonActive,
+            ]}
+            onPress={() =>
+              setCardsCollected(
+                pageCards.map((card) => card.id),
+                !allPageCardsCollected,
+              )
+            }
+            disabled={pageCards.length === 0}
+            accessibilityRole="button"
+            accessibilityLabel={
+              allPageCardsCollected
+                ? "Remove all cards on this binder page from collection"
+                : "Add all cards on this binder page to collection"
+            }
+          >
+            <Text style={styles.collectPageButtonText}>
+              {allPageCardsCollected ? "✓ Page collected" : "+ Collect page"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => navigate("BinderSettings", { binderId })}
           >
@@ -254,37 +277,6 @@ export default function BinderDetailScreen({
       </View>
 
       <View style={styles.page}>
-        <View style={styles.pageHeader}>
-          <View>
-            <Text style={styles.pageLabel}>BINDER PAGE</Text>
-            <Text style={styles.pageCount}>
-              {pageCards.length} / {pageCapacity} cards
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.collectPageButton,
-              allPageCardsCollected && styles.collectPageButtonActive,
-            ]}
-            onPress={() =>
-              setCardsCollected(
-                pageCards.map((card) => card.id),
-                !allPageCardsCollected,
-              )
-            }
-            disabled={pageCards.length === 0}
-            accessibilityRole="button"
-            accessibilityLabel={
-              allPageCardsCollected
-                ? "Remove all cards on this binder page from collection"
-                : "Add all cards on this binder page to collection"
-            }
-          >
-            <Text style={styles.collectPageButtonText}>
-              {allPageCardsCollected ? "✓ Page collected" : "+ Collect page"}
-            </Text>
-          </TouchableOpacity>
-        </View>
         <View style={styles.grid}>
           {pageSlots.map((slot, localIndex) => {
             const card = slot.requirement;
@@ -453,7 +445,7 @@ const styles = StyleSheet.create({
   modeRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     marginTop: 15,
   },
   settingsButton: {
@@ -470,16 +462,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: 999,
-    paddingHorizontal: 13,
+    paddingHorizontal: 10,
     paddingVertical: 8,
   },
   modeButtonActive: {
     borderColor: colors.purple,
     backgroundColor: colors.purpleSoft,
   },
-  modeButtonText: { color: colors.text, fontSize: 10, fontWeight: "700" },
+  modeButtonText: { color: colors.text, fontSize: 9, fontWeight: "700" },
   missingLink: { paddingVertical: 8 },
-  missingLinkText: { color: colors.purple, fontSize: 11, fontWeight: "600" },
+  missingLinkText: { color: colors.purple, fontSize: 9, fontWeight: "600" },
   pageNavigation: {
     flexDirection: "row",
     alignItems: "center",
@@ -525,35 +517,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    paddingTop: 12,
+    paddingTop: 8,
     overflow: "hidden",
   },
-  pageHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingBottom: 10,
-  },
-  pageLabel: {
-    color: colors.text,
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-  },
-  pageCount: { color: colors.textTertiary, fontSize: 10, marginTop: 3 },
   collectPageButton: {
     borderWidth: 1,
     borderColor: colors.purple,
     backgroundColor: colors.purpleSoft,
     borderRadius: 999,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 7,
   },
   collectPageButtonActive: { backgroundColor: colors.purple },
   collectPageButtonText: {
     color: colors.text,
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: "700",
   },
   grid: {
