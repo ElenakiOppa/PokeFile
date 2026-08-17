@@ -4,9 +4,9 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'rea
 import { colors } from '../theme';
 import { getCardById, CARD_DETAIL } from '../data';
 
-export default function AddToCollectionScreen({ goBack, params = {} }) {
+export default function AddToCollectionScreen({ goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {} }) {
   const card = getCardById(params.cardId || CARD_DETAIL.id, CARD_DETAIL);
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(Math.max(1, Number(collectionQuantities[card.id] || 1)));
   const [condition, setCondition] = useState('Near Mint');
   const [language, setLanguage] = useState(card.language || 'English');
   const [finish, setFinish] = useState(card.rarity || 'Holo');
@@ -47,7 +47,7 @@ export default function AddToCollectionScreen({ goBack, params = {} }) {
       <PickerRow label="LANGUAGE" value={language} />
       <PickerRow label="FINISH" value={finish} />
 
-      <TouchableOpacity style={styles.addBtn} onPress={goBack}>
+      <TouchableOpacity style={styles.addBtn} onPress={() => { setCardQuantity(card.id, qty); goBack(); }}>
         <Text style={styles.addBtnText}>Add to Collection</Text>
       </TouchableOpacity>
     </ScrollView>

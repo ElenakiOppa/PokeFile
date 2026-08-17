@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "PokeFile",
+    "slug": "pokefile",
+    "scheme": "pokefile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow PokeFile to choose a profile picture from your photo library.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-font"
+    ]
+  }
+}

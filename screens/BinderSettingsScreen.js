@@ -1,94 +1,102 @@
-
-import React, { useState } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '../theme';
+import TopBar from '../components/TopBar';
+import FilterChip from '../components/FilterChip';
+import BinderCover from '../components/BinderCover';
 import { getSetById } from '../data';
+import { getSetRequirements, isOwned } from '../lib/collectibles';
 
-export default function BinderSettingsScreen({ goBack, params = {} }) {
-  const set = getSetById(params.binderId || params.setId || 'pitch-black');
-  const [name, setName] = useState(set.name);
+const GOALS = ['complete', 'master', 'grandmaster'];
+const SORT_OPTIONS = ['Set Number', 'Name A–Z', 'Rarity', 'Price: High to Low', 'Price: Low to High', 'Owned First'];
+const POCKET_LAYOUTS = [9, 16, 24];
+
+export default function BinderSettingsScreen({ navigate, goBack, params = {}, binders = [], updateBinder = () => {}, collectionQuantities = {} }) {
+  const binderId = params.binderId;
+  const binder = useMemo(() => binders.find((item) => item.id === binderId), [binders, binderId]);
+  const set = getSetById(binder?.setId || params.setId || binderId || 'me5');
+  const availableGoals = GOALS.filter((item) => item !== 'grandmaster' || set.grandmasterAvailable);
+  const [name, setName] = useState(binder?.name || set.name);
+  const [goal, setGoal] = useState(String(binder?.tier || 'master').toLowerCase());
+  const [sortBy, setSortBy] = useState(binder?.sortBy || 'Set Number');
+  const [pocketLayout, setPocketLayout] = useState(Number(binder?.pocketLayout || 9));
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const cards = getSetRequirements(set, goal);
+  const pageCapacity = pocketLayout === 24 ? 12 : pocketLayout;
+  const owned = cards.filter((card) => isOwned(collectionQuantities, card)).length;
+  const percent = cards.length ? Math.round((owned / cards.length) * 100) : 0;
+  const save = () => {
+    if (binder) updateBinder(binder.id, { name: name.trim() || set.name, tier: goal, sortBy, pocketLayout });
+    goBack();
+  };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} hitSlop={12}>
-          <Text style={styles.back}>‹</Text>
+    <View style={styles.screen}>
+      <TopBar variant="back" onBackPress={goBack} onAvatarPress={() => navigate('Profile')} />
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.coverPanel}>
+          <BinderCover set={set} styleId={binder?.coverStyle || 'classic'} name={name} compact />
+        </View>
+
+        <FieldLabel text="NAME" />
+        <TextInput value={name} onChangeText={setName} style={styles.input} placeholderTextColor={colors.textTertiary} />
+
+        <FieldLabel text="GOAL" />
+        <TouchableOpacity style={styles.pickerRow} onPress={() => setGoalOpen((value) => !value)}>
+          <Text style={styles.pickerValue}>{goal.charAt(0).toUpperCase() + goal.slice(1)}</Text><Text style={styles.pickerChevron}>{goalOpen ? '⌃' : '⌄'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.avatar}>
-          <Text style={styles.avatarText}>PH</Text>
+        {goalOpen ? <View style={styles.options}>{availableGoals.map((item) => <FilterChip key={item} label={item.toUpperCase()} active={goal === item} onPress={() => { setGoal(item); setGoalOpen(false); }} />)}</View> : null}
+
+        <FieldLabel text="BINDER FORMAT" />
+        <View style={styles.options}>{POCKET_LAYOUTS.map((item) => <FilterChip key={item} label={`${item}-POCKET`} active={pocketLayout === item} onPress={() => setPocketLayout(item)} />)}</View>
+
+        <FieldLabel text="SORT BY" />
+        <TouchableOpacity style={styles.pickerRow} onPress={() => setSortOpen((value) => !value)}>
+          <Text style={styles.pickerValue}>{sortBy}</Text><Text style={styles.pickerChevron}>{sortOpen ? '⌃' : '⌄'}</Text>
         </TouchableOpacity>
-      </View>
+        {sortOpen ? <View style={styles.optionList}>{SORT_OPTIONS.map((item) => (
+          <TouchableOpacity key={item} style={[styles.optionRow, sortBy === item && styles.optionRowActive]} onPress={() => { setSortBy(item); setSortOpen(false); }}>
+            <Text style={styles.optionText}>{item}</Text>{sortBy === item ? <Text style={styles.optionCheck}>✓</Text> : null}
+          </TouchableOpacity>
+        ))}</View> : null}
 
-      <Image
-        source={{ uri: set.logo }}
-        style={styles.cover}
-        resizeMode="contain"
-      />
+        <FieldLabel text="COVER" />
+        <TouchableOpacity style={styles.pickerRow} onPress={() => navigate('CoverDesigner', { binderId: binder?.id, setId: set.id, tier: goal })}>
+          <Text style={styles.pickerValue}>{set.name} · {(binder?.coverStyle || 'classic').replace(/\b\w/g, (char) => char.toUpperCase())}</Text><Text style={styles.pickerChevron}>›</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.label}>NAME</Text>
-      <TextInput value={name} onChangeText={setName} style={styles.input} placeholderTextColor={colors.textTertiary} />
+        <View style={styles.statsRow}>
+          <Stat value={String(cards.length)} label="Cards" />
+          <Stat value={String(Math.ceil(cards.length / pageCapacity))} label="Pages" />
+          <Stat value={String(percent)} label="Set %" />
+        </View>
+        <Text style={styles.ownedText}>{owned} of {cards.length} collected</Text>
 
-      <Text style={styles.label}>GOAL</Text>
-      <TouchableOpacity style={styles.pickerRow}>
-        <Text style={styles.pickerValue}>{set.type || 'Master Set'}</Text>
-        <Text style={styles.pickerChevron}>⌄</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.label}>SORT BY</Text>
-      <TouchableOpacity style={styles.pickerRow}>
-        <Text style={styles.pickerValue}>Set Number</Text>
-        <Text style={styles.pickerChevron}>⌄</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.label}>COVER</Text>
-      <TouchableOpacity style={styles.pickerRow}>
-        <Text style={styles.pickerValue}>{set.name}</Text>
-        <Text style={styles.pickerChevron}>›</Text>
-      </TouchableOpacity>
-
-      <View style={styles.statsRow}>
-        <Stat value={String(set.totalCards)} label="Cards" />
-        <Stat value={String(set.language === 'English' ? 4 : 2)} label="Formats" />
-        <Stat value={String(set.percent)} label="Set %" />
-      </View>
-
-      <TouchableOpacity style={styles.saveBtn} onPress={goBack}>
-        <Text style={styles.saveBtnText}>Save Cover</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
-}
-
-function Stat({ value, label }) {
-  return (
-    <View style={{ alignItems: 'center' }}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+        <TouchableOpacity style={styles.saveBtn} onPress={save}><Text style={styles.saveBtnText}>Save Changes</Text></TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
 
+function FieldLabel({ text }) { return <Text style={styles.label}>{text}</Text>; }
+function Stat({ value, label }) { return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>; }
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 16 },
-  back: { color: colors.text, fontSize: 28, fontWeight: '300' },
-  avatar: {
-    width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.borderStrong,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  avatarText: { color: colors.text, fontSize: 10, fontWeight: '600' },
-  cover: { width: '100%', height: 140, borderRadius: 12, marginTop: 16, backgroundColor: colors.card },
-  label: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1.5, marginTop: 22 },
-  input: { backgroundColor: colors.card, borderRadius: 10, padding: 14, marginTop: 8, color: colors.text, fontSize: 14 },
-  pickerRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginTop: 8,
-  },
-  pickerValue: { color: colors.text, fontSize: 14 },
-  pickerChevron: { color: colors.textSecondary, fontSize: 14 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 28 },
-  statValue: { color: colors.text, fontSize: 22, fontWeight: '300' },
-  statLabel: { color: colors.textSecondary, fontSize: 12, marginTop: 4 },
-  saveBtn: { backgroundColor: colors.purple, borderRadius: 24, paddingVertical: 15, alignItems: 'center', marginTop: 30, marginBottom: 30 },
-  saveBtnText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, paddingHorizontal: 24 },
+  coverPanel: { width: '100%', height: 170, marginTop: 14, overflow: 'hidden', borderRadius: 14 },
+  label: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', letterSpacing: 2, marginTop: 24 },
+  input: { backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 15, marginTop: 9, color: colors.text, fontSize: 17, fontWeight: '500' },
+  pickerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 15, marginTop: 9 },
+  pickerValue: { color: colors.text, fontSize: 16, flex: 1 }, pickerChevron: { color: colors.textSecondary, fontSize: 16, marginLeft: 8 },
+  options: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 },
+  optionList: { backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginTop: 8, overflow: 'hidden' },
+  optionRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.border },
+  optionRowActive: { backgroundColor: colors.purpleSoft }, optionText: { color: colors.text, fontSize: 14 }, optionCheck: { color: colors.purple, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 34 }, stat: { alignItems: 'center', minWidth: 75 },
+  statValue: { color: colors.text, fontSize: 30, fontWeight: '300' }, statLabel: { color: colors.textSecondary, fontSize: 12, marginTop: 5 },
+  ownedText: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', marginTop: 10 },
+  saveBtn: { backgroundColor: colors.purple, borderRadius: 28, paddingVertical: 16, alignItems: 'center', marginTop: 30, marginBottom: 38 },
+  saveBtnText: { color: colors.text, fontSize: 15, fontWeight: '700' },
 });

@@ -1,24 +1,23 @@
-
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors } from '../theme';
 
-export default function SplashScreen({ navigate }) {
-  useEffect(() => {
-    const t = setTimeout(() => navigate('Home'), 1400);
-    return () => clearTimeout(t);
-  }, []);
-
+export default function SplashScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.brand}>POKÉ HAUS</Text>
-      <View style={styles.underline} />
+      <View style={styles.logoWrap}>
+        <Image source={require('../assets/splash_light.png')} style={styles.logo} resizeMode="contain" />
+      </View>
+      <ActivityIndicator size="small" color={colors.purple} style={styles.loader} />
+      <Text style={styles.loadingText}>LOADING COLLECTION</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
-  brand: { color: colors.text, fontSize: 20, fontWeight: '600', letterSpacing: 5 },
-  underline: { width: 40, height: 2, backgroundColor: colors.purple, marginTop: 14, borderRadius: 1 },
+  container: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 42 },
+  logoWrap: { width: '100%', maxWidth: 310, height: 94, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: '100%', height: '100%' },
+  loader: { marginTop: 34 },
+  loadingText: { color: colors.textTertiary, fontSize: 9, fontWeight: '700', letterSpacing: 2, marginTop: 14 },
 });

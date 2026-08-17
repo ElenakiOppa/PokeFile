@@ -9,10 +9,25 @@ const { width } = Dimensions.get('window');
 const CARD_W = (width - 24 * 2 - 16) / 2;
 const CATEGORY_OPTIONS = ['English', 'Japanese', 'Pocket Expansion'];
 
-export default function AllSetsScreen({ navigate }) {
+export default function AllSetsScreen({ navigate, collectionQuantities = {} }) {
   const [category, setCategory] = useState('English');
   const visibleSets = useMemo(() => SETS_BY_CATEGORY[category] || [], [category]);
-  const inProgressCount = visibleSets.filter((s) => s.percent > 0 && s.percent < 100).length;
+  const progressBySet = useMemo(() => Object.fromEntries(visibleSets.map((set) => {
+    const cards = set.masterCards || set.cards || [];
+    const owned = cards.reduce(
+      (sum, card) => sum + (Number(collectionQuantities[card.id] || 0) > 0 ? 1 : 0),
+      0
+    );
+    return [set.id, {
+      owned,
+      total: cards.length,
+      percent: cards.length ? Math.round((owned / cards.length) * 100) : 0,
+    }];
+  })), [visibleSets, collectionQuantities]);
+  const inProgressCount = visibleSets.filter((set) => {
+    const progress = progressBySet[set.id];
+    return progress?.owned > 0 && progress?.owned < progress?.total;
+  }).length;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -38,7 +53,9 @@ export default function AllSetsScreen({ navigate }) {
       </View>
 
       <View style={styles.grid}>
-        {visibleSets.map((set) => (
+        {visibleSets.map((set) => {
+          const progress = progressBySet[set.id] || { owned: 0, total: set.masterTotal || 0, percent: 0 };
+          return (
           <TouchableOpacity
             key={set.id}
             style={[styles.card, { width: CARD_W }]}
@@ -50,12 +67,13 @@ export default function AllSetsScreen({ navigate }) {
               resizeMode="contain"
             />
             <Text style={styles.cardName}>{set.name}</Text>
-            <Text style={styles.cardPercent}>{set.percent}%</Text>
+            <Text style={styles.cardPercent}>{progress.percent}% · {progress.owned}/{progress.total}</Text>
             <View style={{ marginTop: 6 }}>
-              <ProgressBar percent={set.percent} color={colors.purple} height={2} />
+              <ProgressBar percent={progress.percent} color={colors.purple} height={2} />
             </View>
           </TouchableOpacity>
-        ))}
+          );
+        })}
       </View>
     </ScrollView>
   );

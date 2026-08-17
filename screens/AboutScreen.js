@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../theme';
+import BrandLogo from '../components/BrandLogo';
 import SettingsRow from '../components/SettingsRow';
 
 export default function AboutScreen({ goBack }) {
@@ -16,7 +17,7 @@ export default function AboutScreen({ goBack }) {
       </View>
 
       <View style={styles.brandBlock}>
-        <Text style={styles.brand}>POKÉ HAUS</Text>
+        <BrandLogo width={190} />
         <Text style={styles.tagline}>Collector</Text>
         <Text style={styles.version}>v1.0.0</Text>
       </View>
@@ -38,7 +39,6 @@ const styles = StyleSheet.create({
   back: { color: colors.text, fontSize: 28, fontWeight: '300', width: 24 },
   title: { color: colors.text, fontSize: 13, fontWeight: '600', letterSpacing: 1.5 },
   brandBlock: { alignItems: 'center', marginTop: 40 },
-  brand: { color: colors.text, fontSize: 18, fontWeight: '600', letterSpacing: 3 },
   tagline: { color: colors.textSecondary, fontSize: 13, marginTop: 6 },
   version: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   disclaimer: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 20 },

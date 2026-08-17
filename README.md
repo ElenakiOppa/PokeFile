@@ -1,4 +1,4 @@
-# Poké Haus
+# PokeFile
 
 All 40+ screens from the mockup, wired together with a tiny built-in
 navigator (no `react-navigation` dependency needed to preview it).
@@ -39,8 +39,8 @@ Binder Complete, Card Not Owned
 
 ## Run locally instead
 ```bash
-npx create-expo-app poke-haus
-cd poke-haus
+npx create-expo-app pokefile
+cd pokefile
 # replace the generated App.js and add theme.js, data.js,
 # components/, screens/ from this folder
 npm install
@@ -48,6 +48,18 @@ npx expo start
 ```
 Press `i` for iOS simulator, `a` for Android emulator, `w` for web,
 or scan the QR code with the Expo Go app on your phone.
+
+## Refresh the Scrydex catalog
+
+```bash
+npm run sync:scrydex
+```
+
+The sync reads the English, Japanese, and Pokémon TCG Pocket expansion catalogs and writes a compact inventory to `data/scrydex/sets.json`. Every printing has a `collectionTier` marker:
+
+- `complete` — one canonical printing for each numbered card
+- `master` — additional non-promotional variants and special printings
+- `grandmaster` — promo, stamped, staff, league, event, and tournament printings
 
 ## Notes
 - All images are placeholder URLs from `via.placeholder.com` — swap

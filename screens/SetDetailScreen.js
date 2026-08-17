@@ -2,58 +2,45 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { colors } from '../theme';
-import { getSetById } from '../data';
+import { getSetById, rarityRank } from '../data';
+import { getSetRequirements, isOwned } from '../lib/collectibles';
 
 const { width } = Dimensions.get('window');
 const COLS = 3;
 const GAP = 10;
 const CARD_W = (width - 24 * 2 - GAP * (COLS - 1)) / COLS;
 const TABS = ['Complete', 'Master', 'Grandmaster'];
-const TAB_DEFINITIONS = {
-  Complete: {
-    short: 'Complete Set',
-    text:
-      'A Complete Set means owning exactly one copy of every uniquely numbered card listed in the main set checklist. It includes every base card from number 1 up to the final standard number of the expansion, including Secret Rares, Full Arts, and Illustration Rares that extend beyond the base numbering. It ignores card variant differences: a standard card and a reverse-holo version only count as one entry for that numbered card.',
-  },
-  Master: {
-    short: 'Master Set',
-    text:
-      'A Master Set includes every single card and pullable variation available directly inside that expansion\'s booster packs. It includes the Complete Set plus every parallel foil variant, which means you need both the standard print and the Reverse-Holofoils and other booster-pack variants for each applicable card, along with Secret Rares, Gold cards, and Alternate Arts.',
-  },
-  Grandmaster: {
-    short: 'Grandmaster Set',
-    text:
-      'A Grandmaster Set is the ultimate tier, encompassing the Master Set plus every external variant and promotional card tied to that expansion era. That includes retailer and event-stamped cards, holiday and special print variants, product exclusives, and associated promo cards packaged outside of standard booster packs.',
-  },
-};
 
-export default function SetDetailScreen({ navigate, goBack, params = {} }) {
+export default function SetDetailScreen({ navigate, goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {} }) {
   const [tab, setTab] = useState('Master');
+  const [filters, setFilters] = useState({ show: 'All Cards', rarity: 'All', finish: 'All', sortBy: 'Number' });
   const setId = params.setId || 'pitch-black';
   const set = useMemo(() => getSetById(setId), [setId]);
+  const availableTabs = TABS.filter((item) => item !== 'Grandmaster' || set.grandmasterAvailable);
 
-  const visibleCards = useMemo(() => {
-    if (!set?.cards?.length) return [];
-
-    if (tab === 'Complete') {
-      const seen = new Set();
-      return set.cards.filter((card) => {
-        const key = String(card.number || '').trim();
-        if (!key || card.isPromo || card.isSpecialEvent) return false;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    }
-
-    if (tab === 'Master') {
-      return set.cards.filter((card) => !card.isPromo && !card.isSpecialEvent);
-    }
-
-    return set.cards;
+  const tierCards = useMemo(() => {
+    if (!set) return [];
+    return getSetRequirements(set, tab.toLowerCase());
   }, [set, tab]);
 
-  const selectedDefinition = TAB_DEFINITIONS[tab] || TAB_DEFINITIONS.Master;
+  const visibleCards = useMemo(() => {
+    const cards = tierCards.filter((card) => {
+      const owned = isOwned(collectionQuantities, card);
+      if (filters.show === 'Owned' && !owned) return false;
+      if (filters.show === 'Missing' && owned) return false;
+      if (filters.rarity !== 'All' && String(card.rarity) !== filters.rarity) return false;
+      if (filters.finish !== 'All' && !String(card.variant || '').toLowerCase().includes(filters.finish.toLowerCase())) return false;
+      return true;
+    });
+    if (filters.sortBy === 'Name') return cards.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    if (filters.sortBy === 'Rarity') return cards.sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(a.sourceOrder || 0) - Number(b.sourceOrder || 0));
+    if (filters.sortBy === 'Price: High to Low') return cards.sort((a, b) => Number(b.value || 0) - Number(a.value || 0));
+    if (filters.sortBy === 'Price: Low to High') return cards.sort((a, b) => Number(a.value || 0) - Number(b.value || 0));
+    return cards;
+  }, [tierCards, filters, collectionQuantities]);
+
+  const totalOwnedCount = tierCards.reduce((total, card) => total + (isOwned(collectionQuantities, card) ? 1 : 0), 0);
+  const completionPercent = tierCards.length ? Math.round((totalOwnedCount / tierCards.length) * 100) : 0;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -66,13 +53,13 @@ export default function SetDetailScreen({ navigate, goBack, params = {} }) {
 
       <View style={styles.progressRow}>
         <Text style={styles.percentText}>
-          <Text style={styles.percentBold}>{set.percent}%</Text> complete
+          <Text style={styles.percentBold}>{completionPercent}%</Text> complete
         </Text>
-        <Text style={styles.countText}>{Math.max(1, Math.round((set.percent / 100) * set.totalCards))} / {set.totalCards}</Text>
+        <Text style={styles.countText}>{totalOwnedCount} / {tierCards.length}</Text>
       </View>
 
       <View style={styles.tabs}>
-        {TABS.map((item) => (
+        {availableTabs.map((item) => (
           <TouchableOpacity
             key={item}
             style={[styles.tab, tab === item && styles.tabActive]}
@@ -83,27 +70,39 @@ export default function SetDetailScreen({ navigate, goBack, params = {} }) {
         ))}
       </View>
 
-      <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>{selectedDefinition.short}</Text>
-        <Text style={styles.infoText}>{selectedDefinition.text}</Text>
+      <View style={styles.toolsRow}>
+        <TouchableOpacity style={styles.toolButton} onPress={() => navigate('SetCardGrid', { setId: set.id, tier: tab.toLowerCase() })}><Text style={styles.toolText}>Grid</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.toolButton} onPress={() => navigate('Checklist', { setId: set.id, tier: tab.toLowerCase() })}><Text style={styles.toolText}>Checklist</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.toolButton} onPress={() => navigate('SetFilters', { setId: set.id, tier: tab.toLowerCase(), filters, onApply: setFilters })}><Text style={styles.toolText}>Filters</Text></TouchableOpacity>
       </View>
 
       <View style={styles.grid}>
         {visibleCards.map((card) => (
-          <TouchableOpacity
-            key={card.id}
-            style={[styles.cardTile, { width: CARD_W }]}
-            onPress={() => navigate('CardDetail', { cardId: card.id })}
-          >
-            <Image
-              source={{ uri: card.image }}
-              style={[styles.cardImage, { height: CARD_W * 1.4 }]}
-              resizeMode="contain"
-            />
-            <Text style={styles.cardName} numberOfLines={1}>{card.name}</Text>
+          <View key={card.id} style={[styles.cardTile, { width: CARD_W }]}>
+            <TouchableOpacity onPress={() => navigate('CardDetail', { cardId: card.id })} activeOpacity={0.8}>
+              <Image
+                source={{ uri: card.image }}
+                style={[styles.cardImage, { height: CARD_W * 1.4 }]}
+                resizeMode="contain"
+              />
+              <Text style={styles.cardName} numberOfLines={1}>{card.name}</Text>
+            </TouchableOpacity>
             <Text style={styles.cardNumber}>{card.number}</Text>
-            <Text style={styles.cardValue}>€{Number(card.value || 0).toFixed(2)}</Text>
-          </TouchableOpacity>
+            <View style={styles.cardMetaRow}>
+              <View style={styles.cardMetaText}>
+                <Text style={styles.cardVariant} numberOfLines={1}>{card.variant}</Text>
+                <Text style={styles.cardValue}>€{Number(card.value || 0).toFixed(2)}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.collectButton, collectionQuantities[card.id] > 0 && styles.collectButtonActive]}
+                onPress={() => setCardQuantity(card.id, collectionQuantities[card.id] > 0 ? 0 : 1)}
+                accessibilityRole="button"
+                accessibilityLabel={`${collectionQuantities[card.id] > 0 ? 'Remove' : 'Add'} ${card.name} ${card.variant} ${collectionQuantities[card.id] > 0 ? 'from' : 'to'} collection`}
+              >
+                <Text style={styles.collectButtonText}>{collectionQuantities[card.id] > 0 ? '✓ 1' : '+ Collect'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         ))}
       </View>
     </ScrollView>
@@ -126,9 +125,9 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.purple, borderColor: colors.purple },
   tabText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
   tabTextActive: { color: colors.text },
-  infoBox: { marginHorizontal: 24, marginBottom: 20, borderRadius: 12, backgroundColor: colors.card, padding: 14 },
-  infoTitle: { color: colors.text, fontSize: 13, fontWeight: '600', marginBottom: 8 },
-  infoText: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  toolsRow: { flexDirection: 'row', paddingHorizontal: 24, marginBottom: 18, gap: 8 },
+  toolButton: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  toolText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
   grid: {
     flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between',
     paddingHorizontal: 24, paddingBottom: 40,
@@ -137,5 +136,11 @@ const styles = StyleSheet.create({
   cardImage: { width: '100%', borderRadius: 8, backgroundColor: colors.card },
   cardName: { color: colors.text, fontSize: 11, fontWeight: '500', marginTop: 6 },
   cardNumber: { color: colors.textTertiary, fontSize: 10, marginTop: 1 },
+  cardVariant: { color: colors.textSecondary, fontSize: 9, marginTop: 2 },
   cardValue: { color: colors.purple, fontSize: 10, fontWeight: '600', marginTop: 3 },
+  cardMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginTop: 2 },
+  cardMetaText: { flex: 1, minWidth: 0 },
+  collectButton: { backgroundColor: colors.purpleSoft, borderWidth: 1, borderColor: colors.purple, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 5 },
+  collectButtonActive: { backgroundColor: colors.purple },
+  collectButtonText: { color: colors.text, fontSize: 8, fontWeight: '700' },
 });

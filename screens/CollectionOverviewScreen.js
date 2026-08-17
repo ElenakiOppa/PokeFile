@@ -4,8 +4,8 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'rea
 import { colors } from '../theme';
 import { CARD_LIBRARY, PROFILE } from '../data';
 
-export default function CollectionOverviewScreen({ navigate, goBack }) {
-  const collectedCards = CARD_LIBRARY.filter((card) => card.collected);
+export default function CollectionOverviewScreen({ navigate, goBack, collectionQuantities = {}, binders = [] }) {
+  const collectedCards = CARD_LIBRARY.filter((card) => Number(collectionQuantities[card.id] || 0) > 0);
   const recentCard = collectedCards[0] || null;
 
   return (
@@ -19,13 +19,13 @@ export default function CollectionOverviewScreen({ navigate, goBack }) {
       </View>
 
       <View style={styles.statsRow}>
-        <Stat value={String(PROFILE.stats.cards)} label="Cards" />
+        <Stat value={String(Object.values(collectionQuantities).reduce((sum, quantity) => sum + Number(quantity || 0), 0))} label="Cards" />
         <Stat value={String(PROFILE.stats.sets)} label="Sets" />
-        <Stat value={String(PROFILE.stats.binders)} label="Binders" />
+        <Stat value={String(binders.length)} label="Binders" />
       </View>
 
       <View style={styles.valueBlock}>
-        <Text style={styles.valueAmount}>€{(Number(recentCard?.value || 0) * 0).toFixed(2)}</Text>
+        <Text style={styles.valueAmount}>€{collectedCards.reduce((sum, card) => sum + Number(card.value || 0) * Number(collectionQuantities[card.id] || 0), 0).toFixed(2)}</Text>
         <Text style={styles.valueLabel}>Collection Value</Text>
       </View>
 

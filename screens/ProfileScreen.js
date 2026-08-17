@@ -1,44 +1,74 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../theme';
 import TopBar from '../components/TopBar';
-import { PROFILE } from '../data';
+import { SETS } from '../data';
+import { useAppContext } from '../AppContext';
 
-const STATS = [
-  { label: 'Cards', value: PROFILE.stats.cards },
-  { label: 'Binders', value: String(PROFILE.stats.binders).padStart(2, '0') },
-  { label: 'Sets', value: String(PROFILE.stats.sets).padStart(2, '0') },
-  { label: 'Wishlist', value: String(PROFILE.stats.wishlist).padStart(2, '0') },
-];
-
-const PREFERENCES = [
-  { label: 'Theme', value: PROFILE.preferences.theme, route: 'Appearance' },
-  { label: 'Language', value: PROFILE.preferences.language, route: 'Language' },
-  { label: 'Notifications', value: null, route: 'Notifications' },
-  { label: 'Data & Sync', value: null, route: 'DataSync' },
-  { label: 'About', value: null, route: 'About' },
-];
-
-export default function ProfileScreen({ navigate, goBack }) {
+export default function ProfileScreen({ navigate, goBack, binders = [], collectionQuantities = {}, logOut = async () => {} }) {
+  const { userProfile, updateUserProfile, preferences } = useAppContext();
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(userProfile.displayName || 'Collector');
+  const initials = String(userProfile.displayName || userProfile.email || 'Collector').split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
+  const pickAvatar = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Photo access needed', 'Allow PokeFile to access your photos to choose a profile image.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    if (!result.canceled && result.assets?.[0]?.uri) updateUserProfile({ avatarUri: result.assets[0].uri });
+  };
+  const saveName = () => {
+    const displayName = draftName.trim();
+    if (displayName) updateUserProfile({ displayName });
+    setEditingName(false);
+  };
+  const confirmLogOut = () => Alert.alert(
+    'Log out of PokeFile?',
+    'Your collection will remain saved on this device.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: () => logOut().catch((error) => Alert.alert('Could not log out', error.message)) },
+    ]
+  );
+  const preferenceRows = [
+    { label: 'Theme', value: preferences.theme, route: 'Appearance' },
+    { label: 'Language', value: 'English', route: 'Language' },
+    { label: 'Notifications', value: null, route: 'Notifications' },
+    { label: 'Data & Sync', value: 'On device', route: 'DataSync' },
+    { label: 'About', value: null, route: 'About' },
+  ];
+  const stats = [
+    { label: 'Cards', value: Object.values(collectionQuantities).reduce((sum, quantity) => sum + Number(quantity || 0), 0) },
+    { label: 'Binders', value: String(binders.filter((binder) => binder.kind !== 'flex').length).padStart(2, '0') },
+    { label: 'Sets', value: String(SETS.length).padStart(2, '0') },
+    { label: 'Wishlist', value: '00' },
+  ];
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <TopBar variant="back" onBackPress={goBack} onAvatarPress={() => {}} />
 
       <View style={styles.profileRow}>
         <View>
-          <Text style={styles.name}>{PROFILE.name}</Text>
-          <Text style={styles.since}>{PROFILE.since}</Text>
+          {editingName ? (
+            <TextInput value={draftName} onChangeText={setDraftName} onBlur={saveName} onSubmitEditing={saveName} autoFocus style={styles.nameInput} />
+          ) : (
+            <TouchableOpacity onPress={() => setEditingName(true)}><Text style={styles.name}>{userProfile.displayName || 'Collector'} ✎</Text></TouchableOpacity>
+          )}
+          <Text style={styles.since}>{userProfile.email || 'Signed-in collector'}</Text>
         </View>
-        <View style={styles.avatarWrap}>
-          <Image source={{ uri: PROFILE.avatar }} style={styles.avatarImg} />
+        <TouchableOpacity style={styles.avatarWrap} onPress={pickAvatar} accessibilityLabel="Change profile image">
+          {userProfile.avatarUri ? <Image source={{ uri: userProfile.avatarUri }} style={styles.avatarImg} /> : <View style={[styles.avatarImg, styles.avatarFallback]}><Text style={styles.avatarInitials}>{initials}</Text></View>}
           <View style={styles.editBadge}>
             <Text style={styles.editIcon}>✎</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.statsRow}>
-        {STATS.map((s) => {
+        {stats.map((s) => {
           const routeMap = {
             Cards: 'CollectionAll',
             Binders: 'Binders',
@@ -57,7 +87,7 @@ export default function ProfileScreen({ navigate, goBack }) {
 
       <Text style={styles.sectionLabel}>PREFERENCES</Text>
       <View style={styles.prefList}>
-        {PREFERENCES.map((p) => (
+        {preferenceRows.map((p) => (
           <TouchableOpacity key={p.label} style={styles.prefRow} onPress={() => navigate(p.route)}>
             <Text style={styles.prefLabel}>{p.label}</Text>
             <View style={styles.prefRight}>
@@ -67,6 +97,14 @@ export default function ProfileScreen({ navigate, goBack }) {
           </TouchableOpacity>
         ))}
       </View>
+      <Text style={styles.sectionLabel}>COLLECTOR</Text>
+      <View style={styles.prefList}>
+        {[['Collector DNA','CollectorDNA'],['Insights','Insights'],['Milestones','Milestones'],['Collection History','CollectionHistory']].map(([label,route]) => <TouchableOpacity key={route} style={styles.prefRow} onPress={() => navigate(route)}><Text style={styles.prefLabel}>{label}</Text><Text style={styles.prefChevron}>›</Text></TouchableOpacity>)}
+      </View>
+      <TouchableOpacity style={styles.logoutButton} onPress={confirmLogOut}>
+        <Text style={styles.logoutText}>Log out</Text>
+      </TouchableOpacity>
+      <Text style={styles.localNote}>Your account is signed in. Collection data currently stays on this device.</Text>
     </ScrollView>
   );
 }
@@ -78,9 +116,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24, marginTop: 24,
   },
   name: { color: colors.text, fontSize: 34, fontWeight: '300' },
+  nameInput: { color: colors.text, fontSize: 30, fontWeight: '300', borderBottomWidth: 1, borderBottomColor: colors.purple, minWidth: 180, paddingVertical: 2 },
   since: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
   avatarWrap: { width: 72, height: 72 },
   avatarImg: { width: 72, height: 72, borderRadius: 36, borderWidth: 1, borderColor: colors.purple },
+  avatarFallback: { backgroundColor: colors.purpleSoft, alignItems: 'center', justifyContent: 'center' },
+  avatarInitials: { color: colors.text, fontSize: 20, fontWeight: '700' },
   editBadge: {
     position: 'absolute', bottom: -2, right: -2, width: 24, height: 24, borderRadius: 12,
     backgroundColor: colors.purple, justifyContent: 'center', alignItems: 'center',
@@ -106,4 +147,7 @@ const styles = StyleSheet.create({
   prefRight: { flexDirection: 'row', alignItems: 'center' },
   prefValue: { color: colors.textSecondary, fontSize: 14, marginRight: 8 },
   prefChevron: { color: colors.textSecondary, fontSize: 18 },
+  logoutButton: { marginHorizontal: 24, marginTop: 4, height: 52, borderRadius: 26, borderWidth: 1, borderColor: colors.red, alignItems: 'center', justifyContent: 'center' },
+  logoutText: { color: colors.red, fontSize: 14, fontWeight: '700' },
+  localNote: { color: colors.textTertiary, fontSize: 10, textAlign: 'center', marginTop: 10, marginBottom: 35 },
 });

@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../theme';
 
 const ITEMS = [
-  { key: 'Home', label: 'Collection', hasArrow: true },
+  { key: 'Home', label: 'Home', hasArrow: true },
+  { key: 'Search', label: 'Search' },
+  { key: 'CollectionAll', label: 'Collection' },
   { key: 'AllSets', label: 'Sets' },
   { key: 'Binders', label: 'Binders' },
   { key: 'Wishlist', label: 'Wishlist' },
@@ -21,7 +23,7 @@ export default function MenuScreen({ navigate, goBack }) {
           <Text style={styles.close}>✕</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigate('Profile')} style={styles.avatar}>
-          <Text style={styles.avatarText}>PH</Text>
+          <Text style={styles.avatarText}>PF</Text>
         </TouchableOpacity>
       </View>
 

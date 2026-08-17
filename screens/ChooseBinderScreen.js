@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '../theme';
-import { BINDERS } from '../data';
+import { getSetById } from '../data';
+import BinderBook from '../components/BinderBook';
 
-export default function ChooseBinderScreen({ goBack, navigate }) {
-  const [selected, setSelected] = useState(BINDERS[0]?.id || null);
+export default function ChooseBinderScreen({ goBack, navigate, params = {}, binders = [], addCardToBinder = () => {} }) {
+  const freeformBinders = binders.filter((binder) => binder.kind === 'freeform');
+  const [selected, setSelected] = useState(freeformBinders[0]?.id || null);
 
   return (
     <View style={styles.container}>
@@ -18,26 +20,22 @@ export default function ChooseBinderScreen({ goBack, navigate }) {
       <Text style={styles.title}>Select binder</Text>
       <Text style={styles.subtitle}>Where should this card go?</Text>
 
-      {BINDERS.length === 0 ? (
+      {freeformBinders.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyText}>No binders yet.</Text>
         </View>
       ) : (
         <ScrollView style={{ marginTop: 20 }} showsVerticalScrollIndicator={false}>
-          {BINDERS.map((b) => (
+          {freeformBinders.map((b) => (
             <TouchableOpacity
               key={b.id}
               style={[styles.row, selected === b.id && styles.rowActive]}
               onPress={() => setSelected(b.id)}
             >
-              <Image
-                source={{ uri: b.logo }}
-                style={styles.thumb}
-                resizeMode="contain"
-              />
+              <View style={styles.thumb}><BinderBook set={getSetById(b.setId)} binder={b} width={50} /></View>
               <View style={{ marginLeft: 14, flex: 1 }}>
                 <Text style={styles.name}>{b.name}</Text>
-                <Text style={styles.sub}>{b.subtitle}</Text>
+                <Text style={styles.sub}>{b.tier.toUpperCase()} · {b.pocketLayout || 9}-POCKET</Text>
               </View>
               <View style={[styles.radio, selected === b.id && styles.radioActive]} />
             </TouchableOpacity>
@@ -47,6 +45,11 @@ export default function ChooseBinderScreen({ goBack, navigate }) {
             <Text style={styles.createPlus}>+</Text>
             <Text style={styles.createText}>Create new binder</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.confirmButton, !selected && styles.confirmDisabled]}
+            disabled={!selected}
+            onPress={() => { addCardToBinder(selected, params.cardId); goBack(); }}
+          ><Text style={styles.confirmText}>Add to binder</Text></TouchableOpacity>
         </ScrollView>
       )}
     </View>
@@ -81,4 +84,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   emptyText: { color: colors.textSecondary, fontSize: 13 },
+  confirmButton: { backgroundColor: colors.purple, borderRadius: 999, paddingVertical: 15, alignItems: 'center', marginVertical: 18 },
+  confirmDisabled: { opacity: 0.35 }, confirmText: { color: colors.text, fontSize: 14, fontWeight: '700' },
 });

@@ -34,7 +34,7 @@ export default function SettingsRow({
       ) : (
         <View style={styles.right}>
           {value ? <Text style={styles.value}>{value}</Text> : null}
-          <Text style={styles.chevron}>›</Text>
+          {type !== 'value' ? <Text style={styles.chevron}>›</Text> : null}
         </View>
       )}
     </TouchableOpacity>

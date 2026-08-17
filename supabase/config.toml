@@ -1,0 +1,4 @@
+project_id = "tsklxkzumuqswafpvvhn"
+
+[functions.pokemon-provider-audit]
+verify_jwt = false

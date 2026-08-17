@@ -1,0 +1,47 @@
+{
+  "provider": "pokemon-official",
+  "source": "https://www.pokemon.com/us/sitemap.xml",
+  "generatedAt": "2026-08-17T08:44:52.339Z",
+  "records": [
+    {
+      "id": "pokemon-me5-elite-trainer-box",
+      "setId": "me5",
+      "setName": "Pitch Black",
+      "productName": "Pokémon TCG: Mega Evolution—Pitch Black Elite Trainer Box",
+      "productType": "Elite Trainer Box",
+      "imageProvider": "pokemon-official",
+      "sourceUrl": "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-pitch-black-elite-trainer-box",
+      "officialImageUrl": "https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/series/incrementals/2026/me05-elite-trainer-box/me05-elite-trainer-box-169-en.png",
+      "localPath": "assets/sealed-products/me5/elite-trainer-box.png",
+      "retrievedAt": "2026-08-17T08:44:52.236Z",
+      "verified": true
+    },
+    {
+      "id": "pokemon-me5-booster-bundle",
+      "setId": "me5",
+      "setName": "Pitch Black",
+      "productName": "Pokémon TCG: Mega Evolution—Pitch Black Booster Bundle",
+      "productType": "Booster Bundle",
+      "imageProvider": "pokemon-official",
+      "sourceUrl": "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-pitch-black-booster-bundle",
+      "officialImageUrl": "https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/series/incrementals/2026/me05-booster-bundle/me05-booster-bundle-169-en.png",
+      "localPath": "assets/sealed-products/me5/booster-bundle.png",
+      "retrievedAt": "2026-08-17T08:44:52.280Z",
+      "verified": true
+    },
+    {
+      "id": "pokemon-me5-pokemon-center-etb",
+      "setId": "me5",
+      "setName": "Pitch Black",
+      "productName": "Pokémon TCG: Mega Evolution—Pitch Black Pokémon Center Elite Trainer Box",
+      "productType": "Pokemon Center ETB",
+      "imageProvider": "pokemon-official",
+      "sourceUrl": "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-pitch-black-pokemon-center-elite-trainer-box",
+      "officialImageUrl": "https://www.pokemon.com/static-assets/content-assets/cms2/img/trading-card-game/series/incrementals/2026/me05-pokemon-center-elite-trainer-box/me05-pokemon-center-elite-trainer-box-169-en.png",
+      "localPath": "assets/sealed-products/me5/pokemon-center-etb.png",
+      "retrievedAt": "2026-08-17T08:44:52.338Z",
+      "verified": true
+    }
+  ],
+  "review": []
+}

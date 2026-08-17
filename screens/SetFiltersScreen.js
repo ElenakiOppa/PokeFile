@@ -3,21 +3,27 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '../theme';
 import FilterChip from '../components/FilterChip';
+import { RARITY_ORDER } from '../data';
 
-const RARITY = ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Secret Rare'];
+const RARITY = ['All', ...RARITY_ORDER.filter((item) => item !== 'Unknown')];
 const FINISH = ['All', 'Holo', 'Reverse Holo'];
 const SHOW = ['All Cards', 'Owned', 'Missing'];
+const SORT = ['Number', 'Name', 'Rarity', 'Price: High to Low', 'Price: Low to High'];
 
-export default function SetFiltersScreen({ goBack }) {
-  const [show, setShow] = useState('All Cards');
-  const [rarity, setRarity] = useState('All');
-  const [finish, setFinish] = useState('All');
+export default function SetFiltersScreen({ goBack, params = {} }) {
+  const initial = params.filters || {};
+  const [show, setShow] = useState(initial.show || 'All Cards');
+  const [rarity, setRarity] = useState(initial.rarity || 'All');
+  const [finish, setFinish] = useState(initial.finish || 'All');
+  const [sortBy, setSortBy] = useState(initial.sortBy || 'Number');
+  const clear = () => { setShow('All Cards'); setRarity('All'); setFinish('All'); setSortBy('Number'); };
+  const apply = () => { params.onApply?.({ show, rarity, finish, sortBy }); goBack(); };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>FILTERS</Text>
-        <TouchableOpacity onPress={goBack}>
+        <TouchableOpacity onPress={clear}>
           <Text style={styles.clear}>CLEAR</Text>
         </TouchableOpacity>
       </View>
@@ -45,13 +51,10 @@ export default function SetFiltersScreen({ goBack }) {
         </View>
 
         <Text style={styles.sectionLabel}>SORT BY</Text>
-        <TouchableOpacity style={styles.sortRow}>
-          <Text style={styles.sortText}>Number</Text>
-          <Text style={styles.sortChevron}>⌄</Text>
-        </TouchableOpacity>
+        <View style={styles.chipRow}>{SORT.map((item) => <FilterChip key={item} label={item} active={sortBy === item} onPress={() => setSortBy(item)} />)}</View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.applyBtn} onPress={goBack}>
+      <TouchableOpacity style={styles.applyBtn} onPress={apply}>
         <Text style={styles.applyText}>Apply Filters</Text>
       </TouchableOpacity>
     </View>

@@ -4,18 +4,20 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions
 import { colors } from '../theme';
 import TopBar from '../components/TopBar';
 import { getSetById } from '../data';
+import { getSetRequirements, isOwned } from '../lib/collectibles';
 
 const { width } = Dimensions.get('window');
 const COLS = 3;
 const GAP = 10;
 const CARD_W = (width - 24 * 2 - GAP * (COLS - 1)) / COLS;
 
-export default function ChecklistScreen({ navigate, goBack, params = {} }) {
+export default function ChecklistScreen({ navigate, goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {} }) {
   const setId = params.setId || 'pitch-black';
   const set = getSetById(setId);
-  const [owned, setOwned] = useState(Object.fromEntries(set.cards.map((c) => [c.id, Boolean(c.collected)])));
-
-  const toggle = (id) => setOwned((prev) => ({ ...prev, [id]: !prev[id] }));
+  const tier = String(params.tier || 'master').toLowerCase();
+  const cards = getSetRequirements(set, tier);
+  const owned = Object.fromEntries(cards.map((card) => [card.id, isOwned(collectionQuantities, card)]));
+  const toggle = (id) => setCardQuantity(id, owned[id] ? 0 : 1);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -27,10 +29,10 @@ export default function ChecklistScreen({ navigate, goBack, params = {} }) {
       </View>
 
       <Text style={styles.title}>{set.name.toUpperCase()}</Text>
-      <Text style={styles.subtitle}>In your binder</Text>
+      <Text style={styles.subtitle}>{tier.toUpperCase()} SET · {cards.length} cards</Text>
 
       <View style={styles.grid}>
-        {set.cards.map((card) => (
+        {cards.map((card) => (
           <TouchableOpacity
             key={card.id}
             style={[styles.tile, { width: CARD_W }]}
@@ -45,6 +47,7 @@ export default function ChecklistScreen({ navigate, goBack, params = {} }) {
               {owned[card.id] && <Text style={styles.checkmark}>✓</Text>}
             </View>
             <Text style={styles.cardNumber}>{card.number}</Text>
+            <Text style={styles.cardVariant} numberOfLines={1}>{card.variant}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -70,4 +73,5 @@ const styles = StyleSheet.create({
   checkboxActive: { backgroundColor: colors.purple, borderColor: colors.purple },
   checkmark: { color: colors.text, fontSize: 11, fontWeight: '700' },
   cardNumber: { color: colors.textTertiary, fontSize: 10, marginTop: 6 },
+  cardVariant: { color: colors.textSecondary, fontSize: 9, marginTop: 2 },
 });

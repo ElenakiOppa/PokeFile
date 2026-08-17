@@ -4,16 +4,17 @@ import { colors } from '../theme';
 import TopBar from '../components/TopBar';
 import { getCardById, CARD_DETAIL } from '../data';
 
-export default function CardDetailScreen({ navigate, goBack, params = {} }) {
+export default function CardDetailScreen({ navigate, goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {} }) {
   const cardId = params.cardId || CARD_DETAIL.id;
   const card = getCardById(cardId, CARD_DETAIL);
+  const isCollected = Number(collectionQuantities[card.id] || 0) > 0;
   const [liked, setLiked] = useState(Boolean(card.collected));
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TopBar variant="back" onBackPress={goBack} avatarUri={null} onAvatarPress={() => navigate('Profile')} />
+        <TopBar variant="back" onBackPress={goBack} onAvatarPress={() => navigate('Profile')} />
       </View>
 
       <View style={styles.actionsRow}>
@@ -27,7 +28,7 @@ export default function CardDetailScreen({ navigate, goBack, params = {} }) {
         <View style={styles.menuCard}>
           {[
             ['View All Variants', () => navigate('Variants', { cardId: card.id })],
-            ['Add to Collection', () => navigate('AddToCollection', { cardId: card.id })],
+            [isCollected ? 'Remove from Collection' : 'Add to Collection', () => isCollected ? setCardQuantity(card.id, 0) : navigate('AddToCollection', { cardId: card.id })],
             ['Edit Owned Card', () => navigate('EditOwnedCard', { cardId: card.id })],
             ['Move/Add to Binder', () => navigate('ChooseBinder', { cardId: card.id })],
             ['Zoom Card', () => navigate('CardZoom', { cardId: card.id })],
@@ -57,8 +58,8 @@ export default function CardDetailScreen({ navigate, goBack, params = {} }) {
         <Text style={styles.number}>#{card.number || card.id}</Text>
         <View style={styles.metaRow}>
           <Text style={styles.rarity}>{card.rarity || 'Ultra Rare'} · {card.number || '003/120'}</Text>
-          {card.collected ? (
-            <TouchableOpacity onPress={() => navigate('EditOwnedCard', { cardId: card.id })}>
+          {isCollected ? (
+            <TouchableOpacity onPress={() => setCardQuantity(card.id, 0)} accessibilityLabel={`Remove ${card.name} from collection`}>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>In Collection</Text>
               </View>
@@ -90,8 +91,8 @@ export default function CardDetailScreen({ navigate, goBack, params = {} }) {
           <TouchableOpacity style={styles.actionBtn} onPress={() => navigate('ChooseBinder', { cardId: card.id })}>
             <Text style={styles.actionText}>Choose Binder</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => navigate('AddToCollection', { cardId: card.id })}>
-            <Text style={styles.actionText}>Add to Collection</Text>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => isCollected ? setCardQuantity(card.id, 0) : navigate('AddToCollection', { cardId: card.id })}>
+            <Text style={styles.actionText}>{isCollected ? 'Remove from Collection' : 'Add to Collection'}</Text>
           </TouchableOpacity>
         </View>
       </View>

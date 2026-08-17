@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { colors, type } from '../theme';
+import BrandLogo from './BrandLogo';
+import { useAppContext } from '../AppContext';
 
 /**
  * variant: 'brand'  -> hamburger left, avatar right, brand wordmark below (Home screen style)
- *          'title'  -> hamburger left, centered "POKÉ HAUS" title, avatar right
+ *          'title'  -> hamburger left, centered PokeFile logo, avatar right
  *          'back'   -> back chevron left, avatar right (no title)
  */
 export default function TopBar({
@@ -14,6 +16,15 @@ export default function TopBar({
   onBackPress,
   avatarUri,
 }) {
+  const { userProfile } = useAppContext();
+  const resolvedAvatarUri = avatarUri === undefined ? userProfile.avatarUri : avatarUri;
+  const initials = String(userProfile.displayName || userProfile.email || 'PokeFile')
+    .trim()
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'PF';
   return (
     <View style={styles.row}>
       {variant === 'back' ? (
@@ -28,16 +39,16 @@ export default function TopBar({
       )}
 
       {variant === 'title' ? (
-        <Text style={type.brand}>POKÉ HAUS</Text>
+        <BrandLogo width={116} />
       ) : (
         <View style={{ flex: 1 }} />
       )}
 
       <TouchableOpacity onPress={onAvatarPress} style={styles.avatar}>
-        {avatarUri ? (
-          <Image source={{ uri: avatarUri }} style={styles.avatarImg} />
+        {resolvedAvatarUri ? (
+          <Image source={{ uri: resolvedAvatarUri }} style={styles.avatarImg} />
         ) : (
-          <Text style={styles.avatarText}>PH</Text>
+          <Text style={styles.avatarText}>{initials}</Text>
         )}
       </TouchableOpacity>
     </View>

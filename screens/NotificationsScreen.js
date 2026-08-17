@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../theme';
 import SettingsRow from '../components/SettingsRow';
+import { useAppContext } from '../AppContext';
 
 const DEFAULTS = {
   wishlistPriceDrops: true,
@@ -13,8 +14,9 @@ const DEFAULTS = {
 };
 
 export default function NotificationsScreen({ goBack }) {
-  const [prefs, setPrefs] = useState(DEFAULTS);
-  const toggle = (key) => setPrefs((p) => ({ ...p, [key]: !p[key] }));
+  const { preferences, updatePreferences } = useAppContext();
+  const prefs = { ...DEFAULTS, ...preferences.notifications };
+  const toggle = (key) => updatePreferences({ notifications: { ...prefs, [key]: !prefs[key] } });
 
   return (
     <View style={styles.container}>
@@ -33,6 +35,7 @@ export default function NotificationsScreen({ goBack }) {
         <SettingsRow label="Collection Milestones" type="switch" switchValue={prefs.collectionMilestones} onSwitchChange={() => toggle('collectionMilestones')} />
         <SettingsRow label="Binder Reminders" type="switch" switchValue={prefs.binderReminders} onSwitchChange={() => toggle('binderReminders')} />
       </View>
+      <Text style={styles.note}>These choices are saved. Push delivery for price drops and restocks will become available when the PokeFile notification service is connected.</Text>
     </View>
   );
 }
@@ -42,4 +45,5 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 },
   back: { color: colors.text, fontSize: 28, fontWeight: '300', width: 24 },
   title: { color: colors.text, fontSize: 13, fontWeight: '600', letterSpacing: 1.5 },
+  note: { color: colors.textTertiary, fontSize: 12, lineHeight: 18, marginTop: 24 },
 });

@@ -1,233 +1,182 @@
-﻿import fs from 'node:fs';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, '..');
-const targetPath = path.join(repoRoot, 'data', 'scrydex', 'sets.json');
-const INDEX_URL = 'https://scrydex.com/pokemon/expansions/';
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const targetPath = path.join(__dirname, '..', 'data', 'scrydex', 'sets.json');
+const BASE_URL = 'https://scrydex.com';
+const CATALOGS = [
+  { category: 'English', url: `${BASE_URL}/pokemon/expansions?show_all_variants=true&show_expansion_variants_only=false` },
+  { category: 'Japanese', url: `${BASE_URL}/pokemon/jp/expansions?show_all_variants=true&show_expansion_variants_only=false` },
+  { category: 'Pocket Expansion', url: `${BASE_URL}/pokemon/tcg-pocket/expansions?show_all_variants=true&show_expansion_variants_only=false` },
+];
+const REQUEST_HEADERS = { Accept: 'text/html,application/xhtml+xml', 'User-Agent': 'Mozilla/5.0 Chrome/126 Safari/537.36' };
 
-function cleanSetName(value) {
-  return String(value || '')
-    .replace(/\s*\|\s*Pokémon\s*\|\s*Scrydex$/i, '')
-    .replace(/\s*\|\s*.*$/, '')
-    .replace(/\s*[-–—]\s*.*$/, '')
-    .replace(/\s*\(Pokémon\)\s*$/, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+const decodeHtml = (value = '') => String(value)
+  .replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"')
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+  .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)));
+const plainText = (html = '') => decodeHtml(String(html).replace(/<script\b[\s\S]*?<\/script>/gi, ' ').replace(/<style\b[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+const collectorValue = (value) => Number(String(value ?? '').match(/\d+/)?.[0] ?? Number.MAX_SAFE_INTEGER);
+const variantFromHref = (href) => decodeURIComponent(new URL(href, BASE_URL).searchParams.get('variant') || 'normal');
+const humanizeVariant = (value) => String(value || 'normal').replace(/([a-z\d])([A-Z])/g, '$1 $2').replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const isGrandmasterVariant = (value) => /stamp|promo|pre.?release|staff|league|championship|winner|tournament|regional|national|worlds?|event|pokemon center|play pokemon|first place|second place|third place/i.test(value);
+const baseVariantRank = (value) => ({ normal: 0, holofoil: 1, reverseHolofoil: 2 }[value] ?? 10);
+const displayVariantRank = (card) => {
+  const variant = String(card.variantKey || '').toLowerCase();
+  if (variant === 'normal') return 0;
+  if (variant === 'holofoil') return 1;
+  if (variant === 'reverseholofoil') return 2;
+  if (/pok[eé]ball/.test(variant)) return 3;
+  if (/masterball/.test(variant)) return 4;
+  if (card.isPromoOrStamped) return 100;
+  return 10;
+};
 
-function detectSetCategory(setUrl, title) {
-  const slug = String(setUrl || '').split('/').filter(Boolean).at(-1) || '';
-  const label = String(title || '').toLowerCase();
-
-  if (/tcgp-|pocket/i.test(slug) || /pocket/i.test(label)) {
-    return 'Pocket Expansion';
+async function fetchHtml(url, attempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(url, { headers: REQUEST_HEADERS, signal: AbortSignal.timeout(45000) });
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, attempt * 750));
+    }
   }
-
-  if (/_(ja|jp)$/i.test(slug) || /japanese|jp/i.test(label)) {
-    return 'Japanese';
-  }
-
-  return 'English';
+  throw new Error(`Unable to fetch ${url}: ${lastError?.message || lastError}`);
 }
 
-function slugToTitle(slug) {
-  const withoutCode = String(slug || '')
-    .replace(/[-_][a-z0-9]+$/i, '')
-    .replace(/(?:^|[-_])([a-z])/g, (_, char) => ` ${char.toUpperCase()}`)
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  return withoutCode || 'Unknown Set';
+function expansionUrls(html) {
+  const catalogHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] || html;
+  const matches = [...catalogHtml.matchAll(/href=["'](\/pokemon\/expansions\/[^"'?#]+)[^"']*["']/gi)];
+  return [...new Set(matches.map((match) => `${BASE_URL}${match[1].replace(/\/$/, '')}`))];
 }
 
-function extractExpansionUrls(html) {
-  const regex = /href=["'](\/pokemon\/expansions\/[^"']+)["']/gi;
-  const urls = [];
+function parseCardAnchors(html, setId, setName, category) {
+  const entries = [];
+  const anchorPattern = /<a\b([^>]*href=["']([^"']*\/pokemon\/cards\/[^"']+)["'][^>]*)>([\s\S]*?)<\/a>/gi;
   let match;
-
-  while ((match = regex.exec(html)) !== null) {
-    const href = match[1].replace(/\/+$/, '');
-    if (!href.includes('/cards/')) {
-      urls.push(`https://scrydex.com${href}`);
-    }
-  }
-
-  return [...new Set(urls)];
-}
-
-function extractCardNumber(value) {
-  const match = String(value ?? '').match(/\d+/);
-  return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER;
-}
-
-function formatCardNumber(value) {
-  const numeric = Number(extractCardNumber(value));
-  if (!Number.isFinite(numeric)) return '001';
-  return String(Math.max(1, numeric)).padStart(3, '0');
-}
-
-function buildSetCardsFromHtml(html, setId, setName, categoryName) {
-  const cardMap = new Map();
-  const anchorRegex = /<a[^>]*href=["']\/pokemon\/cards\/[^"']+["'][^>]*>([\s\S]*?)<\/a>/gi;
-  let match;
-
-  while ((match = anchorRegex.exec(html)) !== null) {
-    const anchorHtml = match[1] || '';
-    const dataIdMatch = anchorHtml.match(/data-id=["']([^"']+)["']/i);
-    const imgMatch = anchorHtml.match(/<img[^>]*src=["']([^"']+)["'][^>]*>/i);
-    const hrefMatch = anchorHtml.match(/href=["']([^"']+)["']/i);
-    const text = anchorHtml.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
-
-    if (!dataIdMatch || !imgMatch) continue;
-
-    const id = dataIdMatch[1].trim();
-    const numberText = text.match(/#?\s*(\d+(?:\/\d+)?)\s*$/i)?.[1] || text.match(/(\d+(?:\/\d+)?)\b/i)?.[1] || '1';
-    const normalizedNumber = formatCardNumber(numberText);
-    const name = text.replace(new RegExp(`#?\\s*${String(numberText).replace(/\//g, '\\/')}\\s*$`, 'i'), '').replace(new RegExp(String(id), 'i'), '').replace(/\s+/g, ' ').trim() || `Card ${normalizedNumber}`;
-
-    const card = {
-      id,
-      number: normalizedNumber,
-      name,
-      image: imgMatch[1],
-      rarity: 'Unknown',
-      variant: hrefMatch?.[1]?.includes('variant=holofoil') ? 'Holo' : 'Normal',
-      value: 0,
-      collected: false,
-      setId: id.startsWith('tcgp-') ? setId : setId,
-      setName,
-      language: categoryName,
-    };
-
-    cardMap.set(id, card);
-  }
-
-  const cards = [...cardMap.values()].sort((a, b) => {
-    const aValue = extractCardNumber(a.number);
-    const bValue = extractCardNumber(b.number);
-    return aValue - bValue || String(a.name || '').localeCompare(String(b.name || ''));
-  });
-
-  return cards.length ? cards : [{
-    id: `${setId}-1`,
-    number: '001',
-    name: `Card 001`,
-    image: `https://images.scrydex.com/pokemon/${setId}-1/medium`,
-    rarity: 'Unknown',
-    variant: 'Normal',
-    value: 0,
-    collected: false,
-    setId,
-    setName,
-    language: categoryName,
-  }];
-}
-
-async function collectSets() {
-  const browser = await chromium.launch({ headless: true });
-  const allSets = [];
-
-  try {
-    const response = await fetch(INDEX_URL, {
-      headers: {
-        'User-Agent': USER_AGENT,
-        Accept: 'text/html,application/xhtml+xml',
-      },
-      signal: AbortSignal.timeout(30000),
+  let sourceOrder = 0;
+  while ((match = anchorPattern.exec(html)) !== null) {
+    const href = decodeHtml(match[2]);
+    const body = match[3];
+    const id = body.match(/data-id=["']([^"']+)["']/i)?.[1];
+    if (!id || !id.toLowerCase().startsWith(`${setId.toLowerCase()}-`)) continue;
+    const spanLines = [...body.matchAll(/<span\b[^>]*>([\s\S]*?)<\/span>/gi)].map((span) => plainText(span[1]));
+    const nameLine = spanLines.find((line) => /\s#\S+/.test(line)) || plainText(body).replace(/^MISSING VARIANT IMAGE\s*/i, '');
+    const nameMatch = nameLine.match(/^(.+?)\s+#([^\s$]+)(?:\s|$)/);
+    const number = nameMatch?.[2] || id.slice(setId.length + 1);
+    const name = nameMatch?.[1]?.trim() || `Card ${number}`;
+    const variantKey = variantFromHref(href);
+    const variant = humanizeVariant(variantKey);
+    const imageTag = body.match(/<img\b[^>]*>/i)?.[0] || '';
+    const image = decodeHtml(imageTag.match(/\bsrc=["']([^"']+)["']/i)?.[1] || `https://images.scrydex.com/pokemon/${id}/medium`);
+    const price = Number(plainText(body).match(/\$([\d,.]+)/)?.[1]?.replace(/,/g, '') || 0);
+    entries.push({
+      id: `${id}:${variantKey}`, cardId: id, number: String(number), name, image,
+      rarity: 'Unknown', variant, variantKey, value: price, collected: false,
+      setId, setName, language: category, sourceUrl: new URL(href, BASE_URL).href,
+      sourceOrder: sourceOrder++, missingVariantImage: /Missing Variant Image/i.test(body),
+      isPromoOrStamped: isGrandmasterVariant(variant),
     });
-
-    if (!response.ok) {
-      throw new Error(`Request failed: ${response.status} ${response.statusText} for ${INDEX_URL}`);
-    }
-
-    const html = await response.text();
-    const urls = [...new Set(extractExpansionUrls(html))];
-
-    for (const [index, setUrl] of urls.entries()) {
-      const page = await browser.newPage({
-        userAgent: USER_AGENT,
-      });
-
-      try {
-        await page.goto(setUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        const title = await page.title();
-        const slug = new URL(setUrl).pathname.split('/').filter(Boolean).at(-1) || 'unknown';
-        const categoryName = detectSetCategory(setUrl, slug);
-        const setName = cleanSetName(title.replace(/\s*\|\s*Pokémon\s*\|\s*Scrydex$/i, '')) || cleanSetName(slugToTitle(slug)) || 'Unknown Set';
-        const pageHtml = await page.content();
-        const cards = buildSetCardsFromHtml(pageHtml, slug, setName, categoryName);
-        const bodyText = await page.locator('body').innerText();
-
-        const releaseMatch = bodyText.match(/Released\s+(\d{4}[/-]\d{2}[/-]\d{2})/i) || bodyText.match(/(\d{4}[/-]\d{2}[/-]\d{2})/i);
-        const releaseDate = releaseMatch ? releaseMatch[1].replace(/\//g, '-') : '2025-01-01';
-
-        const normalizedCategory = detectSetCategory(setUrl, slug) === 'Japanese' || /_(ja|jp)$/i.test(slug)
-          ? 'Japanese'
-          : detectSetCategory(setUrl, slug) === 'Pocket Expansion' || /tcgp-|pocket/i.test(slug)
-            ? 'Pocket Expansion'
-            : 'English';
-
-        allSets.push({
-          id: slug,
-          code: slug,
-          name: setName,
-          language: normalizedCategory,
-          category: normalizedCategory,
-          series: setName,
-          releaseDate,
-          order: index,
-          logo: `https://images.scrydex.com/pokemon/${slug}-logo/logo`,
-          color: normalizedCategory === 'Japanese' ? '#14b8a6' : normalizedCategory === 'Pocket Expansion' ? '#f59e0b' : '#6d28d9',
-          type: normalizedCategory === 'Pocket Expansion' ? 'Pocket Expansion' : 'Master',
-          totalCards: cards.length,
-          percent: 0,
-          url: setUrl,
-          cards,
-        });
-      } finally {
-        await page.close();
-      }
-    }
-
-    const sortByDateDescending = (list) => [...list].sort((a, b) => {
-      const aTime = new Date(a.releaseDate).getTime();
-      const bTime = new Date(b.releaseDate).getTime();
-      if (!Number.isNaN(aTime) && !Number.isNaN(bTime) && aTime !== bTime) {
-        return bTime - aTime;
-      }
-      return Number(a.order ?? 0) - Number(b.order ?? 0);
-    });
-
-    const englishSets = sortByDateDescending(allSets.filter((set) => set.category === 'English'));
-    const japaneseSets = sortByDateDescending(allSets.filter((set) => set.category === 'Japanese'));
-    const pocketExpansionSets = sortByDateDescending(allSets.filter((set) => set.category === 'Pocket Expansion'));
-
-    const payload = {
-      englishSets,
-      japaneseSets,
-      pocketExpansionSets,
-      sets: sortByDateDescending(allSets),
-    };
-
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.writeFileSync(targetPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-
-    return payload;
-  } finally {
-    await browser.close();
   }
+  const unique = [...new Map(entries.map((entry) => [entry.id, entry])).values()];
+  return unique.sort((a, b) => collectorValue(a.number) - collectorValue(b.number) || a.sourceOrder - b.sourceOrder);
 }
 
-const payload = await collectSets();
+function buildTiers(variants, printedTotal = Number.MAX_SAFE_INTEGER) {
+  const grouped = new Map();
+  for (const entry of variants) {
+    if (!grouped.has(entry.cardId)) grouped.set(entry.cardId, []);
+    grouped.get(entry.cardId).push(entry);
+  }
+  const completeCards = [...grouped.values()]
+    .filter((group) => collectorValue(group[0]?.number) <= printedTotal)
+    .map((group) => group.filter((card) => !card.isPromoOrStamped).sort((a, b) => baseVariantRank(a.variantKey) - baseVariantRank(b.variantKey) || a.sourceOrder - b.sourceOrder)[0])
+    .filter(Boolean);
+  const masterCards = variants.filter((entry) => !entry.isPromoOrStamped);
+  const sortTier = (list) => [...list].sort((a, b) => collectorValue(a.number) - collectorValue(b.number) || displayVariantRank(a) - displayVariantRank(b) || a.sourceOrder - b.sourceOrder);
+  return { completeCards: sortTier(completeCards), masterCards: sortTier(masterCards), grandmasterCards: sortTier(variants) };
+}
+
+async function parseExpansion(html, url, category, order) {
+  const setId = new URL(url).pathname.split('/').filter(Boolean).at(-1);
+  const heading = plainText(html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || '');
+  const title = plainText(html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '').replace(/\s*\|.*$/, '');
+  const setName = heading || title || setId;
+  const bodyText = plainText(html);
+  const releaseParts = bodyText.match(/Released\s+(\d{4})[/-](\d{2})[/-](\d{2})/i);
+  const releaseDate = releaseParts ? `${releaseParts[1]}-${releaseParts[2]}-${releaseParts[3]}` : '';
+  const variants = parseCardAnchors(html, setId, setName, category);
+  const firstStandardCard = variants.find((card) => !card.isPromoOrStamped);
+  let printedTotal = Number.MAX_SAFE_INTEGER;
+  if (firstStandardCard?.sourceUrl) {
+    const cardHtml = await fetchHtml(firstStandardCard.sourceUrl);
+    const printedNumber = cardHtml.match(/printed_number[\s\S]{0,300}?(\d{1,4})\/(\d{1,4})/i);
+    if (printedNumber) printedTotal = Number(printedNumber[2]);
+  }
+  const tiers = buildTiers(variants, printedTotal);
+  const completeIds = new Set(tiers.completeCards.map((card) => card.id));
+  const masterIds = new Set(tiers.masterCards.map((card) => card.id));
+  const inventory = tiers.grandmasterCards.map((card) => ({
+    ...card,
+    collectionTier: completeIds.has(card.id) ? 'complete' : masterIds.has(card.id) ? 'master' : 'grandmaster',
+  }));
+  const series = category === 'Pocket Expansion' ? 'Pokémon TCG Pocket' : 'Other';
+  return {
+    id: setId, code: setId, name: setName, language: category, category, series,
+    releaseDate, order, url, logo: `https://images.scrydex.com/pokemon/${setId}-logo/logo`,
+    color: category === 'Japanese' ? '#14b8a6' : category === 'Pocket Expansion' ? '#f59e0b' : '#6d28d9',
+    type: 'Complete', percent: 0, printedTotal: Number.isFinite(printedTotal) ? printedTotal : null, totalCards: tiers.completeCards.length,
+    completeTotal: tiers.completeCards.length, masterTotal: tiers.masterCards.length,
+    grandmasterTotal: tiers.grandmasterCards.length, cards: inventory,
+  };
+}
+
+async function mapConcurrent(items, concurrency, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  async function run() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await worker(items[index], index);
+      if ((index + 1) % 25 === 0 || index + 1 === items.length) console.log(`Fetched ${index + 1}/${items.length}`);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, run));
+  return results;
+}
+
+async function collectCatalog(catalog) {
+  const urls = expansionUrls(await fetchHtml(catalog.url));
+  console.log(`${catalog.category}: ${urls.length} expansions`);
+  const sets = await mapConcurrent(urls, 8, async (url, order) => await parseExpansion(await fetchHtml(`${url}?show_all_variants=true&show_expansion_variants_only=false`), url, catalog.category, order));
+  return sets.filter((set) => set.completeTotal > 0);
+}
+
+const [englishSets, japaneseSets, pocketExpansionSets] = await Promise.all(CATALOGS.map(collectCatalog));
+const sets = [...englishSets, ...japaneseSets, ...pocketExpansionSets];
+const payload = {
+  source: 'Scrydex public expansion pages', generatedAt: new Date().toISOString(),
+  tierDefinitions: {
+    complete: 'One canonical printing for every distinct numbered card.',
+    master: 'Complete set plus every non-promotional card variant and special printing.',
+    grandmaster: 'Master set plus promo, stamped, staff, league, event, and tournament printings.',
+  },
+  setIdsByCategory: {
+    English: englishSets.map((set) => set.id),
+    Japanese: japaneseSets.map((set) => set.id),
+    'Pocket Expansion': pocketExpansionSets.map((set) => set.id),
+  },
+  sets,
+};
+fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+fs.writeFileSync(targetPath, `${JSON.stringify(payload)}\n`, 'utf8');
 console.log(JSON.stringify({
-  totalSets: payload.sets.length,
-  english: payload.englishSets.length,
-  japanese: payload.japaneseSets.length,
-  pocket: payload.pocketExpansionSets.length,
-  preview: payload.sets.slice(0, 6).map((set) => ({ id: set.id, name: set.name, category: set.category, totalCards: set.cards.length })),
+  totalSets: sets.length, english: englishSets.length, japanese: japaneseSets.length, pocket: pocketExpansionSets.length,
+  completeCards: sets.reduce((sum, set) => sum + set.completeTotal, 0),
+  masterCards: sets.reduce((sum, set) => sum + set.masterTotal, 0),
+  grandmasterCards: sets.reduce((sum, set) => sum + set.grandmasterTotal, 0), targetPath,
 }, null, 2));

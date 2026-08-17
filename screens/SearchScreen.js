@@ -14,8 +14,14 @@ const SUGGESTIONS = [
   { id: 'series', label: 'Mega Evolution', type: 'series' },
 ];
 
-export default function SearchScreen({ navigate, goBack }) {
+export default function SearchScreen({ navigate, goBack, binders = [] }) {
   const [query, setQuery] = useState('');
+  const normalizedQuery = query.trim().toLowerCase();
+  const results = normalizedQuery ? [
+    ...CARD_LIBRARY.filter((card) => `${card.name} ${card.number} ${card.variant}`.toLowerCase().includes(normalizedQuery)).slice(0, 20).map((card) => ({ id: card.id, label: `${card.name} · ${card.variant}`, type: 'card' })),
+    ...SETS.filter((set) => `${set.name} ${set.code}`.toLowerCase().includes(normalizedQuery)).slice(0, 10).map((set) => ({ id: set.id, label: set.name, type: 'set' })),
+    ...binders.filter((binder) => binder.name.toLowerCase().includes(normalizedQuery)).map((binder) => ({ id: binder.id, label: binder.name, type: 'binder' })),
+  ] : [];
 
   const handleResultPress = (item) => {
     if (item.type === 'card') {
@@ -55,6 +61,12 @@ export default function SearchScreen({ navigate, goBack }) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
+        {normalizedQuery ? <><Text style={styles.sectionLabel}>RESULTS</Text>
+        {results.length ? results.map((item) => (
+          <TouchableOpacity key={`${item.type}-${item.id}`} style={styles.rowItem} onPress={() => handleResultPress(item)}>
+            <Text style={styles.rowIcon}>→</Text><Text style={styles.rowText}>{item.label}</Text>
+          </TouchableOpacity>
+        )) : <TouchableOpacity style={styles.rowItem} onPress={() => navigate('NoSearchResults')}><Text style={styles.rowText}>No results. View search help →</Text></TouchableOpacity>}</> : <>
         <Text style={styles.sectionLabel}>RECENT SEARCHES</Text>
         {RECENT.map((item) => (
           <TouchableOpacity key={`${item.type}-${item.id}`} style={styles.rowItem} onPress={() => handleResultPress(item)}>
@@ -70,6 +82,7 @@ export default function SearchScreen({ navigate, goBack }) {
             <Text style={styles.rowText}>{item.label}</Text>
           </TouchableOpacity>
         ))}
+        </>}
       </ScrollView>
     </View>
   );

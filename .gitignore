@@ -1,1 +1,7 @@
 node_modules
+.env
+.expo-export-check/
+.release-a-check/
+dist/
+dist-*/
+supabase/.temp/

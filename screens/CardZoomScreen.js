@@ -13,7 +13,7 @@ export default function CardZoomScreen({ goBack, navigate, params = {} }) {
           <Text style={styles.back}>‹</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigate('Profile')} style={styles.avatar}>
-          <Text style={styles.avatarText}>PH</Text>
+          <Text style={styles.avatarText}>PF</Text>
         </TouchableOpacity>
       </View>
 

@@ -1,14 +1,16 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../theme';
+import { useAppContext } from '../AppContext';
 
 const ACCENTS = ['#8B5CF6', '#3B82F6', '#22C55E', '#F97316', '#EC4899'];
 
 export default function AppearanceScreen({ goBack }) {
-  const [theme, setTheme] = useState('Dark');
-  const [accent, setAccent] = useState(ACCENTS[0]);
-  const [density, setDensity] = useState('Comfortable');
+  const { preferences, updatePreferences } = useAppContext();
+  const theme = preferences.theme || 'Dark';
+  const accent = preferences.accent || ACCENTS[0];
+  const density = preferences.density || 'Comfortable';
 
   return (
     <View style={styles.container}>
@@ -26,7 +28,7 @@ export default function AppearanceScreen({ goBack }) {
           <TouchableOpacity
             key={t}
             style={[styles.themeChip, theme === t && styles.themeChipActive]}
-            onPress={() => setTheme(t)}
+            onPress={() => updatePreferences({ theme: t })}
           >
             <Text style={[styles.themeChipText, theme === t && styles.themeChipTextActive]}>{t}</Text>
           </TouchableOpacity>
@@ -36,7 +38,7 @@ export default function AppearanceScreen({ goBack }) {
       <Text style={styles.label}>ACCENT COLOR</Text>
       <View style={styles.swatchRow}>
         {ACCENTS.map((c) => (
-          <TouchableOpacity key={c} onPress={() => setAccent(c)} style={styles.swatchWrap}>
+          <TouchableOpacity key={c} onPress={() => updatePreferences({ accent: c })} style={styles.swatchWrap}>
             <View style={[styles.swatch, { backgroundColor: c }, accent === c && styles.swatchActive]} />
           </TouchableOpacity>
         ))}
@@ -48,7 +50,7 @@ export default function AppearanceScreen({ goBack }) {
           <TouchableOpacity
             key={d}
             style={[styles.themeChip, density === d && styles.themeChipActive]}
-            onPress={() => setDensity(d)}
+            onPress={() => updatePreferences({ density: d })}
           >
             <Text style={[styles.themeChipText, density === d && styles.themeChipTextActive]}>{d}</Text>
           </TouchableOpacity>
