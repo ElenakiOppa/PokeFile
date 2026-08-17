@@ -8,7 +8,24 @@ import { getSetRequirements } from '../lib/collectibles';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 54) / 2;
 
-const setValue = (set) => getSetRequirements(set, 'master').reduce((sum, card) => sum + Number(card.value || card.price || 0), 0);
+const getProviderValuation = (set) => {
+  const pricedRequirements = getSetRequirements(set, 'master')
+    .map((card) => Number(card.value ?? card.price))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  if (!pricedRequirements.length) return null;
+
+  return pricedRequirements.reduce((sum, value) => sum + value, 0);
+};
+
+const formatValuation = (value) => value == null
+  ? 'Unavailable'
+  : new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 
 export default function SeriesViewScreen({ navigate, params = {} }) {
   const groups = useMemo(() => {
@@ -52,15 +69,18 @@ export default function SeriesViewScreen({ navigate, params = {} }) {
               </TouchableOpacity>
               {open ? (
                 <View style={styles.grid}>
-                  {group.sets.map((set) => (
-                    <TouchableOpacity key={set.id} style={styles.setCard} onPress={() => navigate('SetDetail', { setId: set.id })} activeOpacity={0.78}>
-                      <View style={styles.logoWell}>
-                        <Image source={{ uri: set.logo }} style={styles.logo} resizeMode="contain" />
-                      </View>
-                      <Text style={styles.setName} numberOfLines={1}>{set.name}</Text>
-                      <Text style={styles.valuation}>Valuation: €{setValue(set).toLocaleString(undefined, { maximumFractionDigits: 0 })}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {group.sets.map((set) => {
+                    const valuation = getProviderValuation(set);
+                    return (
+                      <TouchableOpacity key={set.id} style={styles.setCard} onPress={() => navigate('SetDetail', { setId: set.id })} activeOpacity={0.78}>
+                        <View style={styles.logoWell}>
+                          <Image source={{ uri: set.logo }} style={styles.logo} resizeMode="contain" />
+                        </View>
+                        <Text style={styles.setName} numberOfLines={1}>{set.name}</Text>
+                        <Text style={styles.valuation}>Valuation: {formatValuation(valuation)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               ) : null}
             </View>
@@ -87,7 +107,7 @@ const styles = StyleSheet.create({
   seriesNameOpen: { color: colors.purple },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   setCard: { width: CARD_WIDTH, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', padding: 12, gap: 7 },
-  logoWell: { width: '100%', height: 70, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#181818', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  logoWell: { width: '100%', height: 70, alignItems: 'center', justifyContent: 'center' },
   logo: { width: '88%', height: 61 },
   setName: { color: '#f4f4f5', fontSize: 12, fontWeight: '600' },
   valuation: { color: '#a1a1aa', fontSize: 10 },
