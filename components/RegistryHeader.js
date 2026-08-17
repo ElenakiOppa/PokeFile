@@ -24,7 +24,7 @@ export default function RegistryHeader({ title, onBack, onMenu, onSearch, right,
 }
 
 const styles = StyleSheet.create({
-  row: { height: 68, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  row: { height: 68, paddingHorizontal: 0, flexDirection: 'row', alignItems: 'center', gap: 14 },
   flush: { paddingHorizontal: 0 },
   icon: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1 },
