@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { getSetById } from '../data';
 import { getSetRequirements, isOwned } from '../lib/collectibles';
+import { getLiveSetValuations } from '../lib/liveSetValuation';
 
 const TIERS = ['Complete', 'Master', 'Grandmaster'];
 
@@ -16,7 +17,22 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
   const requirements = useMemo(() => set ? getSetRequirements(set, tier.toLowerCase()) : [], [set, tier]);
   const owned = requirements.reduce((sum, card) => sum + (isOwned(collectionQuantities, card) ? 1 : 0), 0);
   const percent = requirements.length ? (owned / requirements.length) * 100 : 0;
-  const value = requirements.reduce((sum, card) => sum + Number(card.value || card.price || 0), 0);
+  const [liveValue, setLiveValue] = useState({ status: 'loading' });
+  useEffect(() => {
+    if (!set) return undefined;
+    let active = true;
+    setLiveValue({ status: 'loading' });
+    getLiveSetValuations(set)
+      .then((result) => { if (active) setLiveValue({ status: 'ready', ...result }); })
+      .catch((error) => { if (active) setLiveValue({ status: 'error', message: error.message }); });
+    return () => { active = false; };
+  }, [set]);
+  const tierQuote = liveValue.valuations?.[tier.toLowerCase()];
+  const valueLabel = liveValue.status === 'loading'
+    ? 'Updating…'
+    : liveValue.status === 'error' || !tierQuote?.complete
+      ? 'Unavailable'
+      : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tierQuote.value);
   const graded = vaultAssets.filter((asset) => asset.type === 'graded' && (asset.setId === set?.id || asset.setName === set?.name)).length;
   const released = set?.releaseDate ? new Date(set.releaseDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Release date unavailable';
 
@@ -57,7 +73,7 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
         </View>
 
         <View style={styles.stats}>
-          <Stat label="EST. SET VALUE" value={`€${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+          <Stat label={`LIVE ${tier.toUpperCase()} VALUE`} value={valueLabel} />
           <Stat label="GRADED GEMS" value={`${graded} Cards`} />
         </View>
 

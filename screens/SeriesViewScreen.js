@@ -1,26 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { SETS } from '../data';
-import { getSetRequirements } from '../lib/collectibles';
+import { getLiveSetValuations } from '../lib/liveSetValuation';
 
 const { width } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16;
 const GRID_GAP = 12;
 const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - GRID_GAP) / 2;
-
-const getProviderValuation = (set) => {
-  // A set valuation represents one canonical printing of every numbered card.
-  // Master requirements include parallel finishes and would inflate this value.
-  const pricedRequirements = getSetRequirements(set, 'complete')
-    .map((card) => Number(card.value ?? card.price))
-    .filter((value) => Number.isFinite(value) && value > 0);
-
-  if (!pricedRequirements.length) return null;
-
-  return pricedRequirements.reduce((sum, value) => sum + value, 0);
-};
 
 const formatValuation = (value) => value == null
   ? 'Unavailable'
@@ -46,6 +34,38 @@ export default function SeriesViewScreen({ navigate, params = {} }) {
   const requested = params.seriesId || params.series;
   const initial = groups.find((group) => group.name === requested)?.name || groups[0]?.name || '';
   const [expanded, setExpanded] = useState(initial);
+  const [liveValues, setLiveValues] = useState({});
+
+  useEffect(() => {
+    const sets = groups.find((group) => group.name === expanded)?.sets || [];
+    const pending = sets.filter((set) => !liveValues[set.id]);
+    if (!pending.length) return undefined;
+    let active = true;
+    setLiveValues((current) => Object.fromEntries([
+      ...Object.entries(current),
+      ...pending.map((set) => [set.id, { status: 'loading' }]),
+    ]));
+    Promise.all(pending.map(async (set) => {
+      try {
+        const result = await getLiveSetValuations(set);
+        return [set.id, { status: 'ready', ...result }];
+      } catch (error) {
+        return [set.id, { status: 'error', message: error.message }];
+      }
+    })).then((entries) => {
+      if (active) setLiveValues((current) => ({ ...current, ...Object.fromEntries(entries) }));
+    });
+    return () => { active = false; };
+  }, [expanded, groups]);
+
+  const valuationLabel = (set) => {
+    const state = liveValues[set.id];
+    if (!state || state.status === 'loading') return 'Updating live value…';
+    if (state.status === 'error') return 'Live value unavailable';
+    const quote = state.valuations?.complete;
+    if (!quote?.complete) return `Unavailable · ${quote?.priced || 0}/${quote?.required || set.completeTotal || 0} priced`;
+    return `Valuation: ${formatValuation(quote.value)}`;
+  };
 
   return (
     <View style={styles.screen}>
@@ -76,14 +96,13 @@ export default function SeriesViewScreen({ navigate, params = {} }) {
               {open ? (
                 <View style={styles.grid}>
                   {group.sets.map((set) => {
-                    const valuation = getProviderValuation(set);
                     return (
                       <TouchableOpacity key={set.id} style={styles.setCard} onPress={() => navigate('SetDetail', { setId: set.id })} activeOpacity={0.78}>
                         <View style={styles.logoWell}>
                           <Image source={{ uri: set.logo }} style={styles.logo} resizeMode="contain" />
                         </View>
                         <Text style={styles.setName} numberOfLines={1}>{set.name}</Text>
-                        <Text style={styles.valuation}>Valuation: {formatValuation(valuation)}</Text>
+                        <Text style={styles.valuation}>{valuationLabel(set)}</Text>
                       </TouchableOpacity>
                     );
                   })}
