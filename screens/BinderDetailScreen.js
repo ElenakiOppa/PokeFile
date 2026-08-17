@@ -18,8 +18,6 @@ import {
   paginateBinderSlots,
 } from "../lib/collectibles";
 
-const GAP = 10;
-
 export default function BinderDetailScreen({
   navigate,
   goBack,
@@ -31,7 +29,7 @@ export default function BinderDetailScreen({
   binders = [],
   removeCardFromBinder = () => {},
 }) {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState(() =>
     Math.max(0, Number(params.page) || 0),
   );
@@ -52,27 +50,15 @@ export default function BinderDetailScreen({
   const pageCapacity = pocketLayout === 24 ? 12 : pocketLayout;
   const compactCards = true;
   const columns = pocketLayout === 9 ? 3 : 4;
-  const rows = Math.ceil(pageCapacity / columns);
   // Viewport minus the screen inset and grid padding. The binder grid itself
   // deliberately has no surrounding frame or horizontal page margin.
   // Keeping this derived from the actual window width guarantees 3 × 3 and
   // 4-column pages do not wrap when the surrounding screen padding changes.
-  const pageContentWidth = width - 40 - 16;
+  const pageContentWidth = width - 40;
   const horizontalCardWidth = Math.floor(
-    (pageContentWidth - GAP * (columns - 1)) / columns,
+    (pageContentWidth - 8 * (columns - 1)) / columns,
   );
-  // A binder page is intended to be visible as one physical page. Scale its
-  // pockets against the remaining vertical space, while preserving a usable
-  // minimum on unusually short screens (where the outer ScrollView is the
-  // accessibility fallback).
-  const availableGridHeight = Math.max(300, height - 420);
-  const verticalCardWidth = Math.floor(
-    (availableGridHeight / rows - 31 - 8) / 1.34,
-  );
-  const cardWidth = Math.min(
-    horizontalCardWidth,
-    Math.max(columns === 4 ? 54 : 64, verticalCardWidth),
-  );
+  const cardWidth = horizontalCardWidth;
   const cardImageHeight = Math.round(cardWidth * 1.34);
   const isFreeform = savedBinder?.kind === "freeform";
   const requirementSlots = useMemo(
@@ -353,22 +339,27 @@ export default function BinderDetailScreen({
                     ) : null}
                   </View>
                 ) : null}
-                <Text style={styles.cardNumber}>{card.number}</Text>
-                <View
-                  style={[
-                    styles.cardMetaRow,
-                    compactCards && styles.compactMetaRow,
-                  ]}
-                >
-                  <View style={styles.cardMetaText}>
-                    <Text style={styles.cardVariant} numberOfLines={1}>
-                      {card.variant}
+                {compactCards ? (
+                  <View style={styles.compactFooter}>
+                    <Text style={styles.compactIdentity} numberOfLines={1}>
+                      {card.number} · {card.variant}
                     </Text>
-                    <Text style={styles.cardValue}>
+                    <Text style={styles.compactValue}>
                       €{Number(card.value || 0).toFixed(2)}
                     </Text>
                   </View>
-                  {!compactCards ? (
+                ) : (
+                  <>
+                    <Text style={styles.cardNumber}>{card.number}</Text>
+                    <View style={styles.cardMetaRow}>
+                      <View style={styles.cardMetaText}>
+                        <Text style={styles.cardVariant} numberOfLines={1}>
+                          {card.variant}
+                        </Text>
+                        <Text style={styles.cardValue}>
+                          €{Number(card.value || 0).toFixed(2)}
+                        </Text>
+                      </View>
                     <TouchableOpacity
                       style={[
                         styles.addChip,
@@ -390,8 +381,9 @@ export default function BinderDetailScreen({
                           : "+ Collect"}
                       </Text>
                     </TouchableOpacity>
-                  ) : null}
-                </View>
+                    </View>
+                  </>
+                )}
                 {isFreeform ? (
                   <TouchableOpacity
                     style={styles.removeSlot}
@@ -411,7 +403,7 @@ export default function BinderDetailScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
-  content: { paddingBottom: 18 },
+  content: { paddingBottom: 28 },
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -591,8 +583,27 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 2,
   },
-  compactMetaRow: { display: "flex", alignItems: "flex-start", minHeight: 21 },
   cardMetaText: { flex: 1, minWidth: 0 },
+  compactFooter: {
+    minHeight: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 4,
+    paddingHorizontal: 2,
+    paddingTop: 3,
+  },
+  compactIdentity: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 7,
+    fontWeight: "600",
+  },
+  compactValue: {
+    color: colors.purple,
+    fontSize: 8,
+    fontWeight: "700",
+  },
   compactCollect: {
     position: "absolute",
     top: 5,
