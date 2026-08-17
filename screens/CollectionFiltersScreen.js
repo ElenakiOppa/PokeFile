@@ -11,7 +11,8 @@ const SET_OPTIONS = Array.from(new Set(SETS.map((set) => set.name).filter(Boolea
 const RARITY = ["All", ...PRINTED_RARITIES];
 const CONDITION = ["All", "Raw", "Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged", "PSA 10", "PSA 9", "PSA 8"];
 const OWNERSHIP = ["All Cards", "Owned", "Missing"];
-const DEFAULTS = { sets: [], rarity: "All", condition: "All", ownership: "Owned" };
+const SORT = ["Set Number (Default)", "Value: High to Low", "Value: Low to High", "Rarity: High to Low", "Name A–Z"];
+const DEFAULTS = { sets: [], rarity: "All", condition: "All", ownership: "Owned", sortBy: "Set Number (Default)" };
 
 export default function CollectionFiltersScreen({ goBack, navigate, collectionFilters = DEFAULTS, setCollectionFilters = () => {} }) {
   const initialSets = Array.isArray(collectionFilters.sets) ? collectionFilters.sets : collectionFilters.set && collectionFilters.set !== "All Sets" ? [collectionFilters.set] : [];
@@ -19,12 +20,13 @@ export default function CollectionFiltersScreen({ goBack, navigate, collectionFi
   const [rarity, setRarity] = useState(collectionFilters.rarity || DEFAULTS.rarity);
   const [condition, setCondition] = useState(collectionFilters.condition || DEFAULTS.condition);
   const [ownership, setOwnership] = useState(collectionFilters.ownership || DEFAULTS.ownership);
+  const [sortBy, setSortBy] = useState(collectionFilters.sortBy || DEFAULTS.sortBy);
   const [setPickerOpen, setSetPickerOpen] = useState(false);
   const [setQuery, setSetQuery] = useState("");
   const visibleSets = useMemo(() => SET_OPTIONS.filter((name) => name.toLowerCase().includes(setQuery.trim().toLowerCase())), [setQuery]);
   const toggleSet = (name) => setSets((current) => current.includes(name) ? current.filter((item) => item !== name) : [...current, name]);
-  const clear = () => { setSets([]); setRarity("All"); setCondition("All"); setOwnership("Owned"); };
-  const apply = () => { setCollectionFilters({ sets, rarity, condition, ownership }); goBack(); };
+  const clear = () => { setSets([]); setRarity("All"); setCondition("All"); setOwnership("Owned"); setSortBy(DEFAULTS.sortBy); };
+  const apply = () => { setCollectionFilters({ sets, rarity, condition, ownership, sortBy }); goBack(); };
   const setSummary = sets.length === 0 ? "All expansion sets" : sets.length === 1 ? sets[0] : `${sets.length} expansion sets selected`;
 
   return <View style={styles.container}>
@@ -37,6 +39,7 @@ export default function CollectionFiltersScreen({ goBack, navigate, collectionFi
       <Text style={styles.sectionLabel}>PRINTED RARITY</Text><View style={styles.chipRow}>{RARITY.map((item) => <FilterChip key={item} label={printedRarityLabel(item)} active={rarity === item} onPress={() => setRarity(item)} />)}</View>
       <Text style={styles.sectionLabel}>CONDITION</Text><View style={styles.chipRow}>{CONDITION.map((item) => <FilterChip key={item} label={item} active={condition === item} onPress={() => setCondition(item)} />)}</View>
       <Text style={styles.sectionLabel}>OWNERSHIP</Text><View style={styles.chipRow}>{OWNERSHIP.map((item) => <FilterChip key={item} label={item} active={ownership === item} onPress={() => setOwnership(item)} />)}</View>
+      <Text style={styles.sectionLabel}>SORT BY</Text><View style={{paddingHorizontal:24,gap:8}}>{SORT.map((item) => <TouchableOpacity key={item} style={{minHeight:48,borderRadius:13,borderWidth:1,borderColor:sortBy === item ? colors.purple : colors.border,backgroundColor:sortBy === item ? colors.purpleSoft : colors.surface,paddingHorizontal:15,flexDirection:"row",alignItems:"center",justifyContent:"space-between"}} onPress={() => setSortBy(item)}><Text style={{color:sortBy === item ? colors.purple : colors.textSecondary,fontSize:13,fontWeight:sortBy === item ? "800" : "600"}}>{item}</Text><Ionicons name={sortBy === item ? "radio-button-on" : "radio-button-off"} size={19} color={sortBy === item ? colors.purple : colors.textTertiary} /></TouchableOpacity>)}</View>
     </ScrollView>
     <View style={styles.actions}><TouchableOpacity style={styles.resetBtn} onPress={clear}><Text style={styles.resetText}>Reset All</Text></TouchableOpacity><TouchableOpacity style={styles.applyBtn} onPress={apply}><Text style={styles.applyText}>Apply Refinements</Text></TouchableOpacity></View>
     <Modal visible={setPickerOpen} transparent animationType="slide" onRequestClose={() => setSetPickerOpen(false)}><View style={styles.backdrop}><View style={styles.sheet}>

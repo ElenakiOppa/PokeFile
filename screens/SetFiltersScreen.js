@@ -10,8 +10,9 @@ import { applyCardFilters, DEFAULT_SET_FILTERS, filterOptionsForCards, setFilter
 const SORT = ["Set Number (Default)", "Highest Market Value", "Rarity Tier (High to Low)"];
 export default function SetFiltersScreen({ goBack, params = {}, collectionQuantities = {}, setFiltersByKey = {}, updateSetFilters = () => {} }) {
   const tier = String(params.tier || "master").toLowerCase();
-  const key = params.filterKey || setFilterKey(params.setId, tier, params.scope || "set");
-  const cards = getSetRequirements(getSetById(params.setId), tier);
+  const set = getSetById(params.setId);
+  const key = params.filterKey || setFilterKey(set?.id || params.setId, tier, params.scope || "set");
+  const cards = getSetRequirements(set, tier);
   const options = filterOptionsForCards(cards);
   const initial = { ...DEFAULT_SET_FILTERS, ...(setFiltersByKey[key] || params.filters || {}) };
   const [show, setShow] = useState(initial.show);

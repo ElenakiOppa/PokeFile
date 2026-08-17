@@ -14,6 +14,7 @@ import { CARD_LIBRARY } from "../data";
 import EmptyState from "../components/EmptyState";
 import CollectionSectionTabs from "../components/CollectionSectionTabs";
 import { normalizePrintedRarity } from "../lib/cardRarity";
+import { sortCards } from "../lib/cardSorting";
 
 const { width } = Dimensions.get("window");
 const COLS = 3;
@@ -38,8 +39,9 @@ export default function CollectionAllScreen({
     collectionFilters.rarity && collectionFilters.rarity !== "All",
     collectionFilters.condition && collectionFilters.condition !== "All",
     collectionFilters.ownership && collectionFilters.ownership !== "Owned",
+    collectionFilters.sortBy && collectionFilters.sortBy !== "Set Number (Default)",
   ].filter(Boolean).length;
-  const cards = CARD_LIBRARY.filter((card) => {
+  const cards = sortCards(CARD_LIBRARY.filter((card) => {
     const quantity = quantityFor(card);
     const ownership = collectionFilters.ownership || "Owned";
     if (ownership === "Owned" && quantity <= 0) return false;
@@ -50,7 +52,7 @@ export default function CollectionAllScreen({
       if (quantity <= 0 || (rawAcquisitions[card.id]?.condition || "Raw") !== collectionFilters.condition) return false;
     }
     return `${card.name} ${card.setName || ""} ${card.number || ""}`.toLowerCase().includes(query.trim().toLowerCase());
-  });
+  }), collectionFilters.sortBy || "Set Number (Default)");
   const ownedCount = CARD_LIBRARY.filter((card) => quantityFor(card) > 0).length;
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
