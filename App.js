@@ -96,6 +96,7 @@ import FlexBinderPageScreen from "./screens/FlexBinderPageScreen";
 
 // Wishlist
 import WishlistScreen from "./screens/WishlistScreen";
+import TradesScreen from "./screens/TradesScreen";
 import WishlistDetailScreen from "./screens/WishlistDetailScreen";
 import MissingListScreen from "./screens/MissingListScreen";
 
@@ -260,6 +261,7 @@ const SCREENS = {
   FlexBinderPage: FlexBinderPageScreen,
 
   Wishlist: WishlistScreen,
+  Trades: TradesScreen,
   WishlistDetail: WishlistDetailScreen,
   MissingList: MissingListScreen,
 

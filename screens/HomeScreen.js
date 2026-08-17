@@ -1,179 +1,113 @@
 import React, { useMemo } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { CARD_LIBRARY } from '../data';
 import { calculateVaultPortfolio, formatMoney } from '../lib/valueEngine';
 import { useAppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
+const ACQUISITION_WIDTH = Math.min(154, width * 0.39);
 
 export default function HomeScreen({ navigate, binders = [], collectionQuantities = {}, vaultAssets = [], rawAcquisitions = {}, valueSnapshots = [] }) {
-  const { userProfile, preferences } = useAppContext();
-  const collectionCount = Object.values(collectionQuantities).reduce((sum, quantity) => sum + Number(quantity || 0), 0);
-  const portfolio = useMemo(() => calculateVaultPortfolio({
-    ownership: collectionQuantities,
-    cards: CARD_LIBRARY,
-    assets: vaultAssets,
-    rawAcquisitions,
-    currency: preferences.currency || 'EUR',
-  }), [collectionQuantities, vaultAssets, rawAcquisitions, preferences.currency]);
-  const ownedSetCount = new Set(CARD_LIBRARY.filter((card) => Number(collectionQuantities[card.id] || 0) > 0).map((card) => card.setId)).size;
+  const { preferences } = useAppContext();
+  const currency = preferences.currency || 'EUR';
+  const portfolio = useMemo(() => calculateVaultPortfolio({ ownership: collectionQuantities, cards: CARD_LIBRARY, assets: vaultAssets, rawAcquisitions, currency }), [collectionQuantities, vaultAssets, rawAcquisitions, currency]);
+  const ownedCards = useMemo(() => CARD_LIBRARY.filter((card) => Number(collectionQuantities[card.id] || 0) > 0).sort((a, b) => Number(b.value || 0) - Number(a.value || 0)), [collectionQuantities]);
+  const acquisitions = ownedCards.slice(0, 3);
+  const gainers = ownedCards.length > 3 ? ownedCards.slice(3, 6) : ownedCards.slice(0, 3);
+  const gradedAssets = vaultAssets.filter((asset) => asset.type === 'graded');
+  const averageGrade = gradedAssets.length ? gradedAssets.reduce((sum, asset) => sum + Number(asset.grade || 0), 0) / gradedAssets.length : 0;
+  const masterSets = binders.filter((binder) => ['master', 'grandmaster'].includes(String(binder.tier || '').toLowerCase())).length;
   const previousValue = Number(valueSnapshots[valueSnapshots.length - 2]?.totalValue || 0);
   const changePercent = previousValue > 0 ? ((portfolio.totalValue - previousValue) / previousValue) * 100 : null;
-  const showcaseCards = CARD_LIBRARY
-    .filter((card) => Number(collectionQuantities[card.id] || 0) > 0)
-    .sort((a, b) => Number(b.value || 0) - Number(a.value || 0))
-    .slice(0, 3);
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-      <View style={styles.portfolioHeader}>
-        <Text style={styles.overline}>PORTFOLIO OVERVIEW</Text>
-        <Text style={styles.greeting}>{userProfile?.displayName || 'Your collection'}</Text>
-        <Text style={styles.netLabel}>NET WORTH</Text>
-        <View style={styles.netRow}>
-          <Text style={styles.netValue}>{formatMoney(portfolio.totalValue, portfolio.currency)}</Text>
-          {changePercent != null ? <Text style={[styles.change, changePercent < 0 && styles.changeDown]}>{changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%</Text> : null}
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigate('Menu')} accessibilityLabel="Open menu"><Ionicons name="menu" size={18} color={colors.text} /></TouchableOpacity>
+        <View style={styles.headerCopy}><Text style={styles.headerEyebrow}>INDEX OVERVIEW</Text><Text style={styles.headerTitle}>Elite Registry</Text></View>
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigate('Search')} accessibilityLabel="Search"><Ionicons name="search" size={17} color={colors.text} /></TouchableOpacity>
+      </View>
+
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryTopRow}>
+          <Text style={styles.summaryLabel}>ESTIMATED PORTFOLIO VALUE</Text>
+          {changePercent != null ? <View style={styles.changePill}><Text style={[styles.changeText, changePercent < 0 && styles.changeNegative]}>{changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%</Text></View> : null}
         </View>
-        <PortfolioSparkline snapshots={valueSnapshots} currentValue={portfolio.totalValue} />
-        <View style={styles.metrics}>
-          <Metric label="CARDS" value={String(collectionCount)} />
-          <Metric label="SETS" value={String(ownedSetCount)} />
-          <Metric label="MARKET VALUE" value={formatMoney(portfolio.totalValue, portfolio.currency)} />
+        <Text style={styles.summaryValue}>{formatMoney(portfolio.totalValue, currency)}</Text>
+        <Text style={styles.summaryMeta}>Updated now · Secured Private Vault</Text>
+        <View style={styles.statRow}>
+          <SummaryStat label="GRADED CARDS" value={String(gradedAssets.length)} />
+          <SummaryStat label="MASTER SETS" value={String(masterSets)} />
+          <SummaryStat label="AVG. GRADE" value={averageGrade ? averageGrade.toFixed(1) : '—'} />
         </View>
       </View>
 
-      <View style={styles.highlightsHeader}>
-        <Text style={styles.sectionTitle}>Recent Acquisitions</Text>
-        <TouchableOpacity onPress={() => navigate('CollectionAll')}><Text style={styles.viewAll}>View All</Text></TouchableOpacity>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.highlights}>
-        {showcaseCards.map((card) => (
-          <TouchableOpacity key={card.id} style={styles.highlightCard} onPress={() => navigate('CardDetail', { cardId: card.id })}>
-            <Image source={{ uri: card.image }} style={styles.highlightImage} resizeMode="contain" />
-            <Text style={styles.highlightName} numberOfLines={1}>{card.name}</Text>
-            <Text style={styles.highlightMeta} numberOfLines={1}>{card.setName} · #{card.number}</Text>
-            <Text style={styles.highlightValue}>{formatMoney(card.value, portfolio.currency)}</Text>
+      <SectionHeader title="RECENT ACQUISITIONS" action="View All" onPress={() => navigate('CollectionAll')} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.acquisitionRow}>
+        {acquisitions.map((card) => (
+          <TouchableOpacity key={card.id} style={styles.acquisitionCard} onPress={() => navigate('CardDetail', { cardId: card.id })}>
+            <View style={styles.acquisitionImageWell}><Image source={{ uri: card.image }} style={styles.acquisitionImage} resizeMode="contain" /></View>
+            <Text style={styles.acquisitionName} numberOfLines={1}>{card.name}</Text>
+            <Text style={styles.acquisitionMeta} numberOfLines={1}>{card.rarity || card.variant || card.finish || 'Pokémon card'}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
+      <SectionHeader title="TRENDING INDEX GAINERS" />
+      <View style={styles.gainerList}>
+        {gainers.map((card, index) => (
+          <TouchableOpacity key={card.id} style={styles.gainerRow} onPress={() => navigate('CardDetail', { cardId: card.id })}>
+            <View style={styles.goldDot} />
+            <View style={styles.gainerCopy}><Text style={styles.gainerName} numberOfLines={1}>{card.name}{card.number ? ` #${card.number}` : ''}</Text><Text style={styles.gainerMeta} numberOfLines={1}>{card.setName || card.setId || 'Pokéfile Index'}</Text></View>
+            <View style={styles.gainerValueWrap}><Text style={styles.gainerValue}>{formatMoney(Number(card.value || 0), currency)}</Text><Text style={styles.gainerChange}>{index === 0 ? 'INDEX LEADER' : 'MARKET TRACKED'}</Text></View>
+          </TouchableOpacity>
+        ))}
+      </View>
     </ScrollView>
   );
 }
 
-const Metric = ({ label, value }) => (
-  <View style={styles.metricCard}>
-    <Text style={styles.metricLabel}>{label}</Text>
-    <Text style={styles.metricValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
-  </View>
-);
-
-const PortfolioSparkline = ({ snapshots = [], currentValue = 0 }) => {
-  const values = snapshots.slice(-7).map((item) => Number(item.totalValue || 0));
-  if (!values.length || values[values.length - 1] !== Number(currentValue || 0)) values.push(Number(currentValue || 0));
-  while (values.length < 7) values.unshift(values[0] || 0);
-  const points = values.slice(-7);
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = max - min || 1;
-  const chartWidth = width - 48;
-  const step = chartWidth / (points.length - 1);
-  return (
-    <View style={styles.sparkline}>
-      {points.slice(0, -1).map((value, index) => {
-        const y1 = 42 - ((value - min) / range) * 34;
-        const y2 = 42 - ((points[index + 1] - min) / range) * 34;
-        const dx = step;
-        const dy = y2 - y1;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        const angle = `${Math.atan2(dy, dx)}rad`;
-        return <View key={index} style={[styles.sparkSegment, { width: length, left: index * step, top: y1, transform: [{ rotate: angle }] }]} />;
-      })}
-    </View>
-  );
-};
+const SummaryStat = ({ label, value }) => <View style={styles.summaryStat}><Text style={styles.summaryStatLabel}>{label}</Text><Text style={styles.summaryStatValue}>{value}</Text></View>;
+const SectionHeader = ({ title, action, onPress }) => <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{title}</Text>{action ? <TouchableOpacity onPress={onPress}><Text style={styles.sectionAction}>{action}</Text></TouchableOpacity> : null}</View>;
 
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: 40, backgroundColor: colors.bg },
-  portfolioHeader: { paddingHorizontal: 24, marginTop: 18 },
-  overline: { color: colors.textTertiary, fontSize: 8, letterSpacing: 1.4, fontWeight: '600' },
-  greeting: { color: colors.text, fontSize: 21, fontWeight: '700', marginTop: 6 },
-  netLabel: { color: colors.textTertiary, fontSize: 8, letterSpacing: 1.3, marginTop: 27 },
-  netRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 7 },
-  netValue: { color: colors.text, fontSize: 38, lineHeight: 43, fontWeight: '700', flexShrink: 1 },
-  change: { color: '#35C98B', fontSize: 11, fontWeight: '700', marginLeft: 10, marginBottom: 7 },
-  changeDown: { color: colors.red },
-  sparkline: { height: 52, width: '100%', position: 'relative', marginTop: 14 },
-  sparkSegment: { position: 'absolute', height: 2, borderRadius: 1, backgroundColor: '#C9A227' },
-  metrics: { flexDirection: 'row', gap: 9, marginTop: 8 },
-  metricCard: { flex: 1, minWidth: 0, height: 74, borderRadius: 13, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 13, justifyContent: 'space-between' },
-  metricLabel: { color: colors.textTertiary, fontSize: 7, letterSpacing: 0.9 },
-  metricValue: { color: colors.text, fontSize: 18, fontWeight: '700' },
-  highlightsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, marginTop: 28 },
-  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
-  viewAll: { color: '#C9A227', fontSize: 10, fontWeight: '600' },
-  highlights: { paddingHorizontal: 24, paddingTop: 13, gap: 11 },
-  highlightCard: { width: width * 0.43, padding: 10, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  highlightImage: { width: '100%', height: 190, borderRadius: 10, backgroundColor: colors.card },
-  highlightName: { color: colors.text, fontSize: 12, fontWeight: '700', marginTop: 9 },
-  highlightMeta: { color: colors.textTertiary, fontSize: 8, marginTop: 3 },
-  highlightValue: { color: '#C9A227', fontSize: 11, fontWeight: '700', marginTop: 7 },
-  brandRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, marginTop: 20,
-  },
-  homeLogo: { alignSelf: 'flex-start' },
-  devMenuLink: { color: colors.textTertiary, fontSize: 11, fontWeight: '500' },
-  collectionSection: { paddingHorizontal: 24, marginTop: 28 },
-  cardsLabel: { color: colors.textSecondary, fontSize: 20, fontWeight: '300', marginTop: -4 },
-  cardStack: { height: 400, marginTop: 8, alignItems: 'center' },
-  cardImage: { position: 'absolute', width: width * 0.48, height: 320, borderRadius: 12 },
-  stackImage: { width: '100%', height: '100%', borderRadius: 12 },
-  cardLeft: { left: width * 0.06, top: 36, transform: [{ rotate: '-8deg' }], opacity: 0.9 },
-  cardRight: { right: width * 0.02, top: 46, transform: [{ rotate: '8deg' }], opacity: 0.9 },
-  cardCenter: { top: 8, width: width * 0.54, height: 360 },
-  viewCollectionButton: { position: 'absolute', bottom: 0, left: 24 },
-  circleButton: {
-    width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: colors.borderStrong,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 10,
-  },
-  circleButtonLarge: {
-    width: 56, height: 56, borderRadius: 28, borderWidth: 1, borderColor: colors.borderStrong,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  arrowText: { color: colors.text, fontSize: 18 },
-  viewCollectionText: { color: colors.text, fontSize: 13, fontWeight: '500' },
-  binderSection: {
-    paddingHorizontal: 24, marginTop: 20, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 24,
-  },
-  binderTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
-  binderTitle: { color: colors.text, fontSize: 46, fontWeight: '300', lineHeight: 48, flexShrink: 1 },
-  binderSubtitle: { color: colors.purple, fontSize: 13, fontWeight: '600', letterSpacing: 2, marginTop: 8 },
-  percentText: { color: colors.textSecondary, fontSize: 15, marginTop: 16 },
-  percentBold: { color: colors.text, fontWeight: '700' },
-  paginationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 },
-  chevron: { color: colors.textSecondary, fontSize: 20 },
-  dotsRow: { flexDirection: 'row' },
-  dot: { width: 7, height: 7, borderRadius: 4, marginHorizontal: 4 },
-  dotActive: { backgroundColor: colors.purple },
-  dotInactive: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  emptyBinderState: {
-    paddingVertical: 28,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyBinderTitle: { color: colors.text, fontSize: 18, fontWeight: '500' },
-  emptyBinderText: { color: colors.textSecondary, fontSize: 12, marginTop: 8, textAlign: 'center' },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: { paddingBottom: 24 },
+  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
+  headerButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  headerCopy: { flex: 1, marginHorizontal: 10 },
+  headerEyebrow: { color: colors.purple, fontSize: 8, lineHeight: 10, fontWeight: '700' },
+  headerTitle: { color: colors.text, fontSize: 15, lineHeight: 19, fontWeight: '700' },
+  summaryCard: { marginHorizontal: 14, marginTop: 12, borderRadius: 18, borderWidth: 1, borderColor: colors.purple, backgroundColor: colors.surface, padding: 17 },
+  summaryTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  summaryLabel: { color: colors.textSecondary, fontSize: 8, fontWeight: '600' },
+  changePill: { backgroundColor: 'rgba(25,190,111,0.14)', borderRadius: 10, paddingHorizontal: 7, paddingVertical: 4 },
+  changeText: { color: '#20C77A', fontSize: 8, fontWeight: '700' },
+  changeNegative: { color: colors.red },
+  summaryValue: { color: colors.text, fontSize: 29, lineHeight: 36, fontWeight: '700', marginTop: 14 },
+  summaryMeta: { color: colors.textTertiary, fontSize: 8, marginTop: 3 },
+  statRow: { flexDirection: 'row', marginTop: 18 },
+  summaryStat: { flex: 1 },
+  summaryStatLabel: { color: colors.textTertiary, fontSize: 7, fontWeight: '600' },
+  summaryStatValue: { color: colors.purple, fontSize: 14, fontWeight: '800', marginTop: 4 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, marginTop: 15, marginBottom: 8 },
+  sectionTitle: { color: colors.textSecondary, fontSize: 9, fontWeight: '600' },
+  sectionAction: { color: colors.purple, fontSize: 8, fontWeight: '700' },
+  acquisitionRow: { paddingHorizontal: 14, gap: 10 },
+  acquisitionCard: { width: ACQUISITION_WIDTH, minHeight: 182, borderRadius: 13, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 9 },
+  acquisitionImageWell: { width: '100%', height: 123, borderRadius: 9, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  acquisitionImage: { width: '88%', height: '94%' },
+  acquisitionName: { color: colors.text, fontSize: 11, fontWeight: '700', marginTop: 8 },
+  acquisitionMeta: { color: colors.purple, fontSize: 7, fontWeight: '600', marginTop: 2 },
+  gainerList: { paddingHorizontal: 14, gap: 7 },
+  gainerRow: { minHeight: 54, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center' },
+  goldDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.purple, marginRight: 10 },
+  gainerCopy: { flex: 1, minWidth: 0 },
+  gainerName: { color: colors.text, fontSize: 10, fontWeight: '700' },
+  gainerMeta: { color: colors.textTertiary, fontSize: 7, marginTop: 3 },
+  gainerValueWrap: { alignItems: 'flex-end', marginLeft: 8 },
+  gainerValue: { color: colors.text, fontSize: 10, fontWeight: '800' },
+  gainerChange: { color: '#20C77A', fontSize: 6, fontWeight: '700', marginTop: 3 },
 });
