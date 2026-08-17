@@ -63,7 +63,7 @@ export default function SeriesViewScreen({ navigate, params = {} }) {
     if (!state || state.status === 'loading') return 'Updating live value…';
     if (state.status === 'error') return 'Live value unavailable';
     const quote = state.valuations?.complete;
-    if (!quote?.complete) return `Unavailable · ${quote?.priced || 0}/${quote?.required || set.completeTotal || 0} priced`;
+    if (!quote?.priced) return 'Valuation unavailable';
     return `Valuation: ${formatValuation(quote.value)}`;
   };
 

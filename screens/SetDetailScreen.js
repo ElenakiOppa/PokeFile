@@ -30,7 +30,7 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
   const tierQuote = liveValue.valuations?.[tier.toLowerCase()];
   const valueLabel = liveValue.status === 'loading'
     ? 'Updating…'
-    : liveValue.status === 'error' || !tierQuote?.complete
+    : liveValue.status === 'error' || !tierQuote?.priced
       ? 'Unavailable'
       : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tierQuote.value);
   const graded = vaultAssets.filter((asset) => asset.type === 'graded' && (asset.setId === set?.id || asset.setName === set?.name)).length;
