@@ -9,8 +9,7 @@ import {
   Dimensions,
   TextInput,
 } from "react-native";
-import { colors, type } from "../theme";
-import TopBar from "../components/TopBar";
+import { colors } from "../theme";
 import { CARD_LIBRARY } from "../data";
 import EmptyState from "../components/EmptyState";
 
@@ -18,66 +17,28 @@ const { width } = Dimensions.get("window");
 const COLS = 2;
 const GAP = 12;
 const CARD_W = (width - 24 * 2 - GAP * (COLS - 1)) / COLS;
-const TABS = ["All", "Recent", "Favorites"];
 
 export default function CollectionAllScreen({
   navigate,
   collectionQuantities = {},
   vaultAssets = [],
 }) {
-  const [tab, setTab] = useState("All");
   const [query, setQuery] = useState("");
   const cards = CARD_LIBRARY.filter(
     (card) => Number(collectionQuantities[card.id] || 0) > 0,
   ).filter((card) => `${card.name} ${card.setName || ""} ${card.number || ""}`.toLowerCase().includes(query.trim().toLowerCase()));
-  const gradedCount = vaultAssets.filter((asset) => asset.type === "graded").length;
-  const sealedCount = vaultAssets.filter((asset) => asset.type === "sealed").length;
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <TopBar
-        variant="title"
-        onMenuPress={() => navigate("Menu")}
-        onAvatarPress={() => navigate("Profile")}
-      />
-
-      <View style={styles.titleRow}>
+      <View style={styles.pageHeader}>
         <View>
-          <Text style={type.label}>COLLECTION</Text>
-          <Text style={type.hugeNumber}>
-            {String(cards.length).padStart(2, "0")}
-          </Text>
+          <Text style={styles.pageEyebrow}>YOUR LIBRARY</Text>
+          <Text style={styles.pageTitle}>Collection</Text>
+          <Text style={styles.pageCount}>{cards.length} owned cards</Text>
         </View>
-        <View style={styles.titleActions}>
-          <TouchableOpacity
-            style={styles.filterBtn}
-            onPress={() => navigate("MyCollection")}
-            accessibilityLabel="Add a card"
-          >
-            <Text style={styles.addIcon}>＋</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.filterBtn}
-            onPress={() => navigate("CollectionFilters")}
-            accessibilityLabel="Filter collection"
-          >
-            <Text style={styles.filterIcon}>⌕</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.tabs}>
-        {TABS.map((t) => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.tab, tab === t && styles.tabActive]}
-            onPress={() => setTab(t)}
-          >
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity style={styles.vaultPill} onPress={() => navigate("Vault")}>
+          <Text style={styles.vaultPillText}>VAULT</Text>
+          <Text style={styles.vaultPillArrow}>↗</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.searchRow}>
         <View style={styles.searchField}>
@@ -94,30 +55,6 @@ export default function CollectionAllScreen({
           <Text style={styles.searchFilterText}>≡</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={styles.vaultEntry}
-        onPress={() => navigate("Vault")}
-        activeOpacity={0.82}
-      >
-        <View style={styles.vaultGlow} />
-        <View style={styles.vaultIconWrap}>
-          <Text style={styles.vaultIcon}>◇</Text>
-        </View>
-        <View style={styles.vaultContent}>
-          <Text style={styles.vaultLabel}>COLLECTOR VAULT</Text>
-          <Text style={styles.vaultTitle}>Your portfolio</Text>
-          <Text style={styles.vaultText}>Graded cards · sealed products · market value</Text>
-          <View style={styles.vaultMetaRow}>
-            <Text style={styles.vaultMeta}>{gradedCount} GRADED</Text>
-            <View style={styles.vaultDot} />
-            <Text style={styles.vaultMeta}>{sealedCount} SEALED</Text>
-          </View>
-        </View>
-        <View style={styles.vaultCta}>
-          <Text style={styles.vaultCtaText}>OPEN</Text>
-          <Text style={styles.vaultArrow}>›</Text>
-        </View>
-      </TouchableOpacity>
 
       {cards.length === 0 ? (
         <View style={styles.emptyWrap}>
@@ -160,38 +97,19 @@ export default function CollectionAllScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  titleRow: {
+  pageHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: 24,
-    marginTop: 20,
-  },
-  titleActions: { flexDirection: "row", gap: 9 },
-  filterBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    justifyContent: "center",
     alignItems: "center",
-    marginTop: 6,
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
-  filterIcon: { color: colors.text, fontSize: 16 },
-  addIcon: { color: colors.text, fontSize: 19 },
-  tabs: { flexDirection: "row", paddingHorizontal: 24, marginTop: 20 },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tabActive: { backgroundColor: colors.purple, borderColor: colors.purple },
-  tabText: { color: colors.textSecondary, fontSize: 12, fontWeight: "600" },
-  tabTextActive: { color: colors.text },
+  pageEyebrow: { color: colors.textTertiary, fontSize: 8, fontWeight: "700", letterSpacing: 1.3 },
+  pageTitle: { color: colors.text, fontSize: 29, fontWeight: "700", marginTop: 4 },
+  pageCount: { color: colors.textSecondary, fontSize: 10, marginTop: 3 },
+  vaultPill: { height: 38, borderRadius: 19, borderWidth: 1, borderColor: colors.purple, paddingHorizontal: 14, flexDirection: "row", alignItems: "center" },
+  vaultPillText: { color: colors.purple, fontSize: 8, fontWeight: "800", letterSpacing: 1.2 },
+  vaultPillArrow: { color: colors.purple, fontSize: 13, marginLeft: 7 },
   searchRow: { flexDirection: "row", gap: 9, paddingHorizontal: 24, marginTop: 18 },
   searchField: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: "row", alignItems: "center", paddingHorizontal: 12 },
   searchGlyph: { color: colors.textTertiary, fontSize: 17, marginRight: 8 },
@@ -203,7 +121,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    marginTop: 20,
+    marginTop: 18,
     paddingBottom: 40,
   },
   tile: { marginBottom: 20 },
@@ -225,59 +143,4 @@ const styles = StyleSheet.create({
   },
   quantityText: { color: colors.text, fontSize: 10, fontWeight: "700" },
   emptyWrap: { height: 420 },
-  vaultEntry: {
-    marginHorizontal: 24,
-    marginTop: 18,
-    minHeight: 126,
-    padding: 17,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.purple,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  vaultGlow: {
-    position: "absolute",
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: colors.purpleSoft,
-    right: -75,
-    top: -72,
-  },
-  vaultIconWrap: {
-    width: 48,
-    height: 72,
-    borderRadius: 12,
-    backgroundColor: colors.purple,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-  },
-  vaultIcon: { color: "#fff", fontSize: 24 },
-  vaultContent: { flex: 1 },
-  vaultLabel: {
-    color: colors.purple,
-    fontSize: 7,
-    fontWeight: "800",
-    letterSpacing: 1.4,
-  },
-  vaultTitle: { color: colors.text, fontSize: 20, fontWeight: "500", marginTop: 5 },
-  vaultText: { color: colors.textSecondary, fontSize: 8, marginTop: 5 },
-  vaultMetaRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },
-  vaultMeta: { color: colors.text, fontSize: 7, fontWeight: "700", letterSpacing: 0.8 },
-  vaultDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.purple, marginHorizontal: 7 },
-  vaultCta: {
-    height: 34,
-    paddingHorizontal: 11,
-    borderRadius: 17,
-    backgroundColor: colors.purple,
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: 8,
-  },
-  vaultCtaText: { color: "#fff", fontSize: 7, fontWeight: "800", letterSpacing: 1 },
-  vaultArrow: { color: "#fff", fontSize: 17, marginLeft: 4, marginTop: -1 },
 });

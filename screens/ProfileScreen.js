@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../theme';
-import TopBar from '../components/TopBar';
 import { SETS } from '../data';
 import { useAppContext } from '../AppContext';
 
@@ -48,7 +47,10 @@ export default function ProfileScreen({ navigate, goBack, binders = [], collecti
   ];
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <TopBar variant="back" onBackPress={goBack} onAvatarPress={() => {}} />
+      <View style={styles.screenHeading}>
+        <Text style={styles.screenEyebrow}>COLLECTOR IDENTITY</Text>
+        <Text style={styles.screenTitle}>Profile</Text>
+      </View>
 
       <View style={styles.profileRow}>
         <View>
@@ -111,6 +113,9 @@ export default function ProfileScreen({ navigate, goBack, binders = [], collecti
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  screenHeading: { paddingHorizontal: 24, paddingTop: 24 },
+  screenEyebrow: { color: colors.textTertiary, fontSize: 8, fontWeight: '700', letterSpacing: 1.3 },
+  screenTitle: { color: colors.text, fontSize: 29, fontWeight: '700', marginTop: 4 },
   profileRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 24, marginTop: 24,

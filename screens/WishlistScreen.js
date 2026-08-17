@@ -7,8 +7,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { colors, type } from "../theme";
-import TopBar from "../components/TopBar";
+import { colors } from "../theme";
 import EmptyState from "../components/EmptyState";
 import { targetPriceStatus } from "../lib/valueEngine";
 
@@ -27,18 +26,11 @@ export default function WishlistScreen({
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <TopBar
-        variant="title"
-        onMenuPress={() => navigate("Menu")}
-        onAvatarPress={() => navigate("Profile")}
-      />
-
       <View style={styles.titleRow}>
         <View>
-          <Text style={type.label}>WISHLIST</Text>
-          <Text style={type.hugeNumber}>
-            {String(items.length).padStart(2, "0")}
-          </Text>
+          <Text style={styles.eyebrow}>SAVED CARDS</Text>
+          <Text style={styles.title}>Wishlist</Text>
+          <Text style={styles.count}>{items.length} cards tracked</Text>
         </View>
         <TouchableOpacity
           style={styles.addBtn}
@@ -129,14 +121,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     paddingHorizontal: 24,
-    marginTop: 20,
+    paddingTop: 24,
   },
+  eyebrow: { color: colors.textTertiary, fontSize: 8, fontWeight: "700", letterSpacing: 1.3 },
+  title: { color: colors.text, fontSize: 29, fontWeight: "700", marginTop: 4 },
+  count: { color: colors.textSecondary, fontSize: 10, marginTop: 3 },
   addBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 6,

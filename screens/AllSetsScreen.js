@@ -1,12 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { colors, type } from '../theme';
-import TopBar from '../components/TopBar';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { colors } from '../theme';
 import ProgressBar from '../components/ProgressBar';
 import { SETS_BY_CATEGORY } from '../data';
 
-const { width } = Dimensions.get('window');
-const CARD_W = (width - 24 * 2 - 16) / 2;
 const CATEGORY_OPTIONS = ['English', 'Japanese', 'Pocket Expansion'];
 
 export default function AllSetsScreen({ navigate, collectionQuantities = {} }) {
@@ -31,10 +28,9 @@ export default function AllSetsScreen({ navigate, collectionQuantities = {} }) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <TopBar variant="title" onMenuPress={() => navigate('Menu')} onAvatarPress={() => navigate('Profile')} />
-
       <View style={styles.titleBlock}>
-        <Text style={styles.title}>ALL{'\n'}SETS</Text>
+        <Text style={styles.eyebrow}>POKÉMON TCG</Text>
+        <Text style={styles.title}>Expansions</Text>
         <Text style={styles.subtitle}>
           {visibleSets.length} {category} sets · <Text style={{ color: colors.purple }}>{inProgressCount} in progress</Text>
         </Text>
@@ -58,7 +54,7 @@ export default function AllSetsScreen({ navigate, collectionQuantities = {} }) {
           return (
           <TouchableOpacity
             key={set.id}
-            style={[styles.card, { width: CARD_W }]}
+            style={styles.card}
             onPress={() => navigate('SetDetail', { setId: set.id })}
           >
             <Image
@@ -66,11 +62,14 @@ export default function AllSetsScreen({ navigate, collectionQuantities = {} }) {
               style={styles.cardImage}
               resizeMode="contain"
             />
-            <Text style={styles.cardName}>{set.name}</Text>
-            <Text style={styles.cardPercent}>{progress.percent}% · {progress.owned}/{progress.total}</Text>
-            <View style={{ marginTop: 6 }}>
-              <ProgressBar percent={progress.percent} color={colors.purple} height={2} />
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardName}>{set.name}</Text>
+              <Text style={styles.cardPercent}>{progress.owned} of {progress.total} cards · {progress.percent}%</Text>
+              <View style={styles.progressWrap}>
+                <ProgressBar percent={progress.percent} color={colors.purple} height={2} />
+              </View>
             </View>
+            <Text style={styles.cardChevron}>›</Text>
           </TouchableOpacity>
           );
         })}
@@ -81,17 +80,21 @@ export default function AllSetsScreen({ navigate, collectionQuantities = {} }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  titleBlock: { paddingHorizontal: 24, marginTop: 20 },
-  title: { color: colors.text, fontSize: 48, fontWeight: '300', lineHeight: 48 },
-  subtitle: { color: colors.textSecondary, fontSize: 14, marginTop: 14 },
+  titleBlock: { paddingHorizontal: 24, paddingTop: 24 },
+  eyebrow: { color: colors.textTertiary, fontSize: 8, fontWeight: '700', letterSpacing: 1.3 },
+  title: { color: colors.text, fontSize: 29, fontWeight: '700', marginTop: 4 },
+  subtitle: { color: colors.textSecondary, fontSize: 10, marginTop: 5 },
   filterRow: { flexDirection: 'row', paddingHorizontal: 24, marginTop: 18, gap: 8 },
   filterChip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
   filterChipActive: { backgroundColor: colors.purple, borderColor: colors.purple },
   filterText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
   filterTextActive: { color: colors.text },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 24, marginTop: 24, paddingBottom: 40 },
-  card: { marginBottom: 24 },
-  cardImage: { width: '100%', height: 160, borderRadius: 10, backgroundColor: colors.card },
-  cardName: { color: colors.text, fontSize: 14, fontWeight: '500', marginTop: 10 },
-  cardPercent: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  grid: { paddingHorizontal: 24, marginTop: 22, paddingBottom: 40 },
+  card: { minHeight: 90, marginBottom: 10, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 10, flexDirection: 'row', alignItems: 'center' },
+  cardImage: { width: 74, height: 66, borderRadius: 9, backgroundColor: colors.card },
+  cardInfo: { flex: 1, minWidth: 0, marginLeft: 13 },
+  cardName: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  cardPercent: { color: colors.textSecondary, fontSize: 9, marginTop: 5 },
+  progressWrap: { marginTop: 9 },
+  cardChevron: { color: colors.textTertiary, fontSize: 18, marginLeft: 12 },
 });

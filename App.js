@@ -23,7 +23,7 @@ import {
 } from "@expo-google-fonts/manrope";
 import { colors, setThemeSettings } from "./theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import BottomNav, { MAIN_TAB_ROUTES } from "./components/BottomNav";
+import BottomNav from "./components/BottomNav";
 import { supabase } from "./lib/supabase";
 import { AppContext } from "./AppContext";
 import {
@@ -1118,7 +1118,7 @@ export default function App() {
     storageReady &&
     authReady &&
     splashMinimumElapsed &&
-    MAIN_TAB_ROUTES.includes(current.route);
+    !AUTH_ROUTES.includes(current.route);
 
   return (
     <AppContext.Provider
