@@ -7,7 +7,7 @@ import { calculateVaultPortfolio, formatMoney } from '../lib/valueEngine';
 import { useAppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
-const ACQUISITION_WIDTH = Math.min(190, width * 0.46);
+const ACQUISITION_WIDTH = Math.min(174, width * 0.43);
 
 export default function HomeScreen({ navigate, binders = [], collectionQuantities = {}, vaultAssets = [], rawAcquisitions = {}, valueSnapshots = [] }) {
   const { preferences } = useAppContext();
@@ -36,11 +36,11 @@ export default function HomeScreen({ navigate, binders = [], collectionQuantitie
           {changePercent != null ? <View style={styles.changePill}><Text style={[styles.changeText, changePercent < 0 && styles.changeNegative]}>{changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%</Text></View> : null}
         </View>
         <Text style={styles.summaryValue}>{formatMoney(portfolio.totalValue, currency)}</Text>
-        <Text style={styles.summaryMeta}>Updated now · Secured Private Vault</Text>
+        <Text style={styles.summaryMeta}>Updated now • Secured Private Vault</Text>
         <View style={styles.statRow}>
           <SummaryStat label="GRADED CARDS" value={String(gradedAssets.length)} />
           <SummaryStat label="MASTER SETS" value={String(masterSets)} />
-          <SummaryStat label="AVG. GRADE" value={averageGrade ? averageGrade.toFixed(1) : '—'} />
+          <SummaryStat label="AVG. GRADE" value={averageGrade ? `PSA ${averageGrade.toFixed(1)}` : '—'} />
         </View>
       </View>
 
@@ -48,9 +48,10 @@ export default function HomeScreen({ navigate, binders = [], collectionQuantitie
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.acquisitionRow}>
         {acquisitions.map((card) => (
           <TouchableOpacity key={card.id} style={styles.acquisitionCard} onPress={() => navigate('CardDetail', { cardId: card.id })}>
-            <View style={styles.acquisitionImageWell}><Image source={{ uri: card.image }} style={styles.acquisitionImage} resizeMode="contain" /></View>
+            <Image source={{ uri: card.image }} style={styles.acquisitionImage} resizeMode="contain" />
             <Text style={styles.acquisitionName} numberOfLines={1}>{card.name}</Text>
-            <Text style={styles.acquisitionMeta} numberOfLines={1}>{card.rarity || card.variant || card.finish || 'Pokémon card'}</Text>
+            <Text style={styles.acquisitionMeta} numberOfLines={1}>{card.setName || card.setId}{card.number ? ` #${card.number}` : ''}</Text>
+            <Text style={styles.acquisitionValue} numberOfLines={1}>{card.rarity || card.variant || card.finish || 'Indexed'} · {formatMoney(Number(card.value || 0), currency)}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -74,40 +75,40 @@ const SectionHeader = ({ title, action, onPress }) => <View style={styles.sectio
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingBottom: 24 },
-  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
-  headerButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  headerCopy: { flex: 1, marginHorizontal: 10 },
-  headerEyebrow: { color: colors.purple, fontSize: 8, lineHeight: 10, fontWeight: '700' },
-  headerTitle: { color: colors.text, fontSize: 15, lineHeight: 19, fontWeight: '700' },
-  summaryCard: { marginHorizontal: 14, marginTop: 12, borderRadius: 18, borderWidth: 1, borderColor: colors.purple, backgroundColor: colors.surface, padding: 17 },
+  content: { paddingBottom: 12 },
+  header: { height: 63, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' },
+  headerButton: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#121212', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
+  headerCopy: { flex: 1, marginHorizontal: 12 },
+  headerEyebrow: { color: colors.purple, fontSize: 11, lineHeight: 14, fontWeight: '600' },
+  headerTitle: { color: colors.text, fontSize: 18, lineHeight: 23, fontWeight: '700', marginTop: 2 },
+  summaryCard: { marginHorizontal: 16, marginTop: 16, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(212,175,55,0.25)', backgroundColor: '#121212', padding: 20 },
   summaryTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  summaryLabel: { color: colors.textSecondary, fontSize: 8, fontWeight: '600' },
-  changePill: { backgroundColor: 'rgba(25,190,111,0.14)', borderRadius: 10, paddingHorizontal: 7, paddingVertical: 4 },
-  changeText: { color: '#20C77A', fontSize: 8, fontWeight: '700' },
+  summaryLabel: { color: '#a1a1aa', fontSize: 12, fontWeight: '600' },
+  changePill: { backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  changeText: { color: '#10b981', fontSize: 11, fontWeight: '600' },
   changeNegative: { color: colors.red },
-  summaryValue: { color: colors.text, fontSize: 29, lineHeight: 36, fontWeight: '700', marginTop: 14 },
-  summaryMeta: { color: colors.textTertiary, fontSize: 8, marginTop: 3 },
-  statRow: { flexDirection: 'row', marginTop: 18 },
+  summaryValue: { color: '#f4f4f5', fontSize: 32, lineHeight: 42, fontWeight: '700', marginTop: 16 },
+  summaryMeta: { color: '#71717a', fontSize: 12, marginTop: 4 },
+  statRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24, paddingTop: 8 },
   summaryStat: { flex: 1 },
-  summaryStatLabel: { color: colors.textTertiary, fontSize: 7, fontWeight: '600' },
-  summaryStatValue: { color: colors.purple, fontSize: 14, fontWeight: '800', marginTop: 4 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, marginTop: 15, marginBottom: 8 },
-  sectionTitle: { color: colors.textSecondary, fontSize: 9, fontWeight: '600' },
-  sectionAction: { color: colors.purple, fontSize: 8, fontWeight: '700' },
-  acquisitionRow: { paddingHorizontal: 14, gap: 10 },
-  acquisitionCard: { width: ACQUISITION_WIDTH, minHeight: 246, borderRadius: 13, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 9 },
-  acquisitionImageWell: { width: '100%', height: 188, borderRadius: 9, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  acquisitionImage: { width: '100%', height: '100%' },
-  acquisitionName: { color: colors.text, fontSize: 11, fontWeight: '700', marginTop: 8 },
-  acquisitionMeta: { color: colors.purple, fontSize: 7, fontWeight: '600', marginTop: 2 },
-  gainerList: { paddingHorizontal: 14, gap: 7 },
-  gainerRow: { minHeight: 54, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center' },
-  gainerImage: { width: 32, height: 44, marginRight: 10 },
+  summaryStatLabel: { color: '#a1a1aa', fontSize: 11, fontWeight: '400' },
+  summaryStatValue: { color: colors.purple, fontSize: 16, fontWeight: '700', marginTop: 4 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, marginTop: 12, marginBottom: 12 },
+  sectionTitle: { color: '#a1a1aa', fontSize: 14, fontWeight: '600' },
+  sectionAction: { color: colors.purple, fontSize: 12, fontWeight: '600' },
+  acquisitionRow: { paddingHorizontal: 16, gap: 12 },
+  acquisitionCard: { width: ACQUISITION_WIDTH, minHeight: 284, alignItems: 'center' },
+  acquisitionImage: { width: '100%', height: 232, borderRadius: 8 },
+  acquisitionName: { color: '#f4f4f5', fontSize: 12, fontWeight: '700', marginTop: 6, maxWidth: '100%' },
+  acquisitionMeta: { color: '#71717a', fontSize: 10, marginTop: 2 },
+  acquisitionValue: { color: colors.purple, fontSize: 10, fontWeight: '600', marginTop: 2 },
+  gainerList: { paddingHorizontal: 16, gap: 8 },
+  gainerRow: { minHeight: 57, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
+  gainerImage: { width: 25, height: 35, marginRight: 10 },
   gainerCopy: { flex: 1, minWidth: 0 },
-  gainerName: { color: colors.text, fontSize: 10, fontWeight: '700' },
-  gainerMeta: { color: colors.textTertiary, fontSize: 7, marginTop: 3 },
+  gainerName: { color: '#f4f4f5', fontSize: 13, fontWeight: '600' },
+  gainerMeta: { color: '#71717a', fontSize: 11, marginTop: 2 },
   gainerValueWrap: { alignItems: 'flex-end', marginLeft: 8 },
-  gainerValue: { color: colors.text, fontSize: 10, fontWeight: '800' },
-  gainerChange: { color: '#20C77A', fontSize: 6, fontWeight: '700', marginTop: 3 },
+  gainerValue: { color: '#f4f4f5', fontSize: 13, fontWeight: '700' },
+  gainerChange: { color: '#10b981', fontSize: 8, fontWeight: '600', marginTop: 2 },
 });
