@@ -148,6 +148,7 @@ export default function BinderDetailScreen({
       nestedScrollEnabled
     >
       <RegistryHeader
+        flush
         title={savedBinder?.name || binder.name}
         eyebrow={`${total} EXPANSION INDEX`}
         onBack={goBack}

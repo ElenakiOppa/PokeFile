@@ -14,11 +14,11 @@ import BinderCover from "../components/BinderCover";
 import FilterChip from "../components/FilterChip";
 import { SETS, getSetById } from "../data";
 const STYLES = [
-  ["classic", "Geometric"],
-  ["artwork", "Foil Sparkle"],
-  ["line", "Cosmic Waves"],
-  ["minimal", "Minimalist"],
-  ["marble", "Marble"],
+  ["classic", "Set Logo"],
+  ["artwork", "Contour"],
+  ["line", "Marble"],
+  ["minimal", "Pokéball"],
+  ["marble", "Vortex"],
   ["energy", "Card Back"],
 ];
 const TIERS = ["complete", "master", "grandmaster"];
@@ -78,6 +78,7 @@ export default function CoverDesignerScreen({
   return (
     <View style={s.page}>
       <RegistryHeader
+        flush
         title="Cover Designer"
         eyebrow="CUSTOMIZE PORTFOLIO ART"
         onBack={goBack}
@@ -110,13 +111,16 @@ export default function CoverDesignerScreen({
             ))}
           </View>
         ) : null}
-        <View style={s.preview}>
-          <BinderCover
-            set={set}
-            styleId={style}
-            name={customText ? name : ""}
-            compact
-          />
+        <View style={s.previewStage}>
+          <View style={s.preview}>
+            <BinderCover set={set} styleId={style} name={customText ? name : ""} compact />
+          </View>
+          <View style={s.previewCopy}>
+            <Text style={s.previewKicker}>LIVE COVER PREVIEW</Text>
+            <Text style={s.previewName}>{customText ? name : set.name}</Text>
+            <Text style={s.previewMeta}>{STYLES.find(([id]) => id === style)?.[1]} · {tier.toUpperCase()}</Text>
+            <TouchableOpacity style={s.changeSet} onPress={() => setPicker((value) => !value)}><Text style={s.changeSetText}>Change expansion</Text></TouchableOpacity>
+          </View>
         </View>
         {editing ? null : (
           <>
@@ -160,31 +164,12 @@ export default function CoverDesignerScreen({
             </View>
           </>
         )}
-        <Text style={s.label}>BASE PALETTE & GRADIENTS</Text>
-        <View style={s.palette}>
-          {["#D6B42C", "#315BC5", "#08785F", "#B9252B", "#3B4658"].map(
-            (c, i) => (
-              <TouchableOpacity
-                key={c}
-                style={[s.dot, { backgroundColor: c }, i === 0 && s.dotActive]}
-                onPress={() => setStyle(STYLES[i]?.[0] || style)}
-              />
-            ),
-          )}
-        </View>
-        <Text style={s.label}>METALLIC GEOMETRIC PATTERNS</Text>
-        <View style={s.patterns}>
-          {STYLES.slice(0, 4).map(([id, label]) => (
-            <TouchableOpacity
-              key={id}
-              style={[s.pattern, style === id && s.patternActive]}
-              onPress={() => setStyle(id)}
-            >
-              <Text
-                style={[s.patternText, style === id && s.patternTextActive]}
-              >
-                {label}
-              </Text>
+        <Text style={s.label}>CHOOSE A COVER</Text>
+        <View style={s.coverGrid}>
+          {STYLES.map(([id, label], index) => (
+            <TouchableOpacity key={id} style={[s.coverChoice, style === id && s.coverChoiceActive]} onPress={() => setStyle(id)}>
+              <View style={s.coverThumb}><BinderCover set={set} styleId={id} compact /></View>
+              <View style={s.coverChoiceFooter}><Text style={[s.coverIndex, style === id && s.coverChoiceText]}>{String(index + 1).padStart(2, "0")}</Text><Text style={[s.coverChoiceLabel, style === id && s.coverChoiceText]} numberOfLines={1}>{label}</Text></View>
             </TouchableOpacity>
           ))}
         </View>
@@ -210,13 +195,14 @@ export default function CoverDesignerScreen({
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
   content: { paddingBottom: 100 },
-  preview: {
-    width: 200,
-    height: 270,
-    alignSelf: "center",
-    marginTop: 16,
-    overflow: "hidden",
-  },
+  previewStage: { minHeight: 224, marginTop: 12, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, flexDirection: "row", alignItems: "center" },
+  preview: { width: 132, height: 184, overflow: "hidden", shadowColor: colors.purple, shadowOpacity: .28, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 8 },
+  previewCopy: { flex: 1, paddingLeft: 16 },
+  previewKicker: { color: colors.purple, fontSize: 8, fontWeight: "800", letterSpacing: 1 },
+  previewName: { color: colors.text, fontSize: 18, fontWeight: "800", marginTop: 8 },
+  previewMeta: { color: colors.textSecondary, fontSize: 9, marginTop: 5 },
+  changeSet: { alignSelf: "flex-start", marginTop: 16, borderRadius: 9, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, paddingVertical: 8 },
+  changeSetText: { color: colors.text, fontSize: 8, fontWeight: "700" },
   label: {
     color: colors.textSecondary,
     fontSize: 9,
@@ -234,21 +220,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 11,
   },
   chips: { flexDirection: "row", flexWrap: "wrap", marginTop: 8 },
-  palette: { flexDirection: "row", gap: 12 },
-  dot: { width: 38, height: 38, borderRadius: 19 },
-  dotActive: { borderWidth: 2, borderColor: colors.text },
-  patterns: { flexDirection: "row", gap: 8 },
-  pattern: {
-    paddingHorizontal: 11,
-    paddingVertical: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.card,
-  },
-  patternActive: { borderColor: colors.purple },
-  patternText: { color: colors.textSecondary, fontSize: 8 },
-  patternTextActive: { color: colors.purple },
+  coverGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10 },
+  coverChoice: { width: "31.5%", borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 6 },
+  coverChoiceActive: { borderColor: colors.purple, backgroundColor: colors.purpleSoft },
+  coverThumb: { width: "100%", aspectRatio: .72, overflow: "hidden", borderRadius: 8 },
+  coverChoiceFooter: { marginTop: 6 },
+  coverIndex: { color: colors.textTertiary, fontSize: 7, fontWeight: "800" },
+  coverChoiceLabel: { color: colors.text, fontSize: 8, fontWeight: "700", marginTop: 2 },
+  coverChoiceText: { color: colors.purple },
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",
