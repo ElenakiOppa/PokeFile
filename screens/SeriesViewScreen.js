@@ -20,21 +20,32 @@ const formatValuation = (value) => value == null
   }).format(value);
 
 const seriesLabel = (name) => /series$/i.test(name) ? name : `${name} Series`;
+const CATALOGS = [
+  { key: 'English', label: 'English' },
+  { key: 'Japanese', label: 'Japanese' },
+  { key: 'Pocket Expansion', label: 'Pocket' },
+];
 
 export default function SeriesViewScreen({ navigate, params = {} }) {
+  const requestedCatalog = params.category || params.catalog;
+  const [catalog, setCatalog] = useState(CATALOGS.some((item) => item.key === requestedCatalog) ? requestedCatalog : 'English');
   const groups = useMemo(() => {
     const map = new Map();
-    SETS.forEach((set) => {
+    SETS.filter((set) => set.category === catalog).forEach((set) => {
       const key = set.series || (set.language === 'Pocket' ? 'Pokémon TCG Pocket' : 'Other Series');
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(set);
     });
     return [...map.entries()].map(([name, sets]) => ({ name, sets }));
-  }, []);
+  }, [catalog]);
   const requested = params.seriesId || params.series;
   const initial = groups.find((group) => group.name === requested)?.name || groups[0]?.name || '';
   const [expanded, setExpanded] = useState(initial);
   const [liveValues, setLiveValues] = useState({});
+
+  useEffect(() => {
+    if (!groups.some((group) => group.name === expanded)) setExpanded(groups[0]?.name || '');
+  }, [catalog, groups, expanded]);
 
   useEffect(() => {
     const sets = groups.find((group) => group.name === expanded)?.sets || [];
@@ -84,6 +95,19 @@ export default function SeriesViewScreen({ navigate, params = {} }) {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.catalogTabs}>
+        {CATALOGS.map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            style={[styles.catalogTab, catalog === item.key && styles.catalogTabActive]}
+            onPress={() => setCatalog(item.key)}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.catalogTabText, catalog === item.key && styles.catalogTabTextActive]}>{item.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {groups.map((group) => {
           const open = expanded === group.name;
@@ -123,6 +147,11 @@ const styles = StyleSheet.create({
   headerButton: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#121212', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   eyebrow: { color: colors.purple, fontSize: 11, lineHeight: 14, fontWeight: '600' },
   title: { color: '#f4f4f5', fontSize: 18, lineHeight: 23, fontWeight: '700', marginTop: 2 },
+  catalogTabs: { marginHorizontal: HORIZONTAL_PADDING, marginTop: 4, padding: 4, borderRadius: 13, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', flexDirection: 'row', gap: 4 },
+  catalogTab: { flex: 1, minHeight: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  catalogTabActive: { backgroundColor: colors.purple },
+  catalogTabText: { color: '#a1a1aa', fontSize: 10, fontWeight: '700' },
+  catalogTabTextActive: { color: '#080808' },
   scroll: { flex: 1 },
   content: { padding: HORIZONTAL_PADDING, gap: 16, paddingBottom: 28 },
   group: { gap: 12 },
