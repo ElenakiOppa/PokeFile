@@ -17,6 +17,7 @@ import {
   isOwned,
   paginateBinderSlots,
 } from "../lib/collectibles";
+import { applyCardFilters, setFilterKey } from "../lib/cardFilters";
 
 export default function BinderDetailScreen({
   navigate,
@@ -28,6 +29,7 @@ export default function BinderDetailScreen({
   setCardsCollected = () => {},
   binders = [],
   removeCardFromBinder = () => {},
+  setFiltersByKey = {},
 }) {
   const { width } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState(() =>
@@ -135,6 +137,8 @@ export default function BinderDetailScreen({
     updateCurrentParams({ page: nextPage });
   };
   const pageSlots = pages[currentPage] || [];
+  const filterKey = setFilterKey(binder?.id, tier);
+  const matchingKeys = useMemo(() => new Set(applyCardFilters(requirementSlots.map((slot) => slot.requirement).filter(Boolean), setFiltersByKey[filterKey], collectionQuantities).map((card) => card.collectibleKey || card.id)), [requirementSlots, setFiltersByKey, filterKey, collectionQuantities]);
   const pageCards = pageSlots.map((slot) => slot.requirement).filter(Boolean);
   const allPageCardsCollected =
     pageCards.length > 0 &&
@@ -269,6 +273,7 @@ export default function BinderDetailScreen({
           {pageSlots.map((slot, localIndex) => {
             const card = slot.requirement;
             const owned = card ? isOwned(collectionQuantities, card) : false;
+            const filteredOut = card ? !matchingKeys.has(card.collectibleKey || card.id) : false;
             const slotIndex = currentPage * pageCapacity + localIndex;
             if (!card)
               return (
@@ -290,6 +295,7 @@ export default function BinderDetailScreen({
                   styles.cardTile,
                   styles.pocket,
                   showMissing && owned && styles.ownedMuted,
+                  filteredOut && styles.filteredOut,
                   { width: cardWidth },
                 ]}
               >
@@ -419,6 +425,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   filterIcon: { color: colors.text, fontSize: 22 },
+  filteredOut: { opacity: 0.12 },
   subtitle: {
     color: colors.purple,
     fontSize: 13,

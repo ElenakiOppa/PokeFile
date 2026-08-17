@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme";
@@ -40,6 +41,9 @@ export default function FlexBinderEditorScreen({
   );
   const [pickerSlot, setPickerSlot] = useState(null);
   const [moveFrom, setMoveFrom] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [rarity, setRarity] = useState("All");
   const owned = useMemo(() => {
     const seen = new Set();
     return CARD_LIBRARY.filter(
@@ -49,6 +53,11 @@ export default function FlexBinderEditorScreen({
         seen.add(collectibleKey(c)),
     );
   }, [collectionQuantities]);
+  const rarityOptions = useMemo(() => ["All", ...new Set(owned.map((card) => card.rarity).filter(Boolean))], [owned]);
+  const filteredOwned = useMemo(() => owned.filter((card) => {
+    if (rarity !== "All" && card.rarity !== rarity) return false;
+    return `${card.name} ${card.setName || ""} ${card.number || ""}`.toLowerCase().includes(query.trim().toLowerCase());
+  }), [owned, rarity, query]);
   const choose = (i) => {
     if (moveFrom !== null) {
       setDraft((v) => moveFlexSlot(v, moveFrom, i));
@@ -73,7 +82,7 @@ export default function FlexBinderEditorScreen({
         title="Flex Showcase Editor"
         eyebrow="3X3 HIGHLIGHT ARRAY"
         onBack={goBack}
-        onSearch={() => navigate("SetFilters")}
+        onSearch={() => setFiltersOpen(true)}
       />
       <View style={s.tip}>
         <Ionicons name="hand-left-outline" color={colors.purple} size={15} />
@@ -126,8 +135,9 @@ export default function FlexBinderEditorScreen({
               <Text style={s.done}>Done</Text>
             </TouchableOpacity>
           </View>
+          <TextInput value={query} onChangeText={setQuery} placeholder="Search owned cards" placeholderTextColor={colors.textTertiary} style={s.search} />
           <View style={s.pickerGrid}>
-            {owned.map((card) => (
+            {filteredOwned.map((card) => (
               <TouchableOpacity
                 key={collectibleKey(card)}
                 style={s.pick}
@@ -144,6 +154,9 @@ export default function FlexBinderEditorScreen({
             ))}
           </View>
         </ScrollView>
+      </Modal>
+      <Modal visible={filtersOpen} transparent animationType="slide" onRequestClose={() => setFiltersOpen(false)}>
+        <View style={s.backdrop}><View style={s.sheet}><View style={s.sheetHead}><Text style={s.pickerTitle}>Filter owned cards</Text><TouchableOpacity onPress={() => setFiltersOpen(false)}><Ionicons name="close" size={22} color={colors.text} /></TouchableOpacity></View><ScrollView contentContainerStyle={s.chips}>{rarityOptions.map((item) => <TouchableOpacity key={item} style={[s.chip, rarity === item && s.chipOn]} onPress={() => setRarity(item)}><Text style={[s.chipText, rarity === item && s.chipTextOn]}>{item}</Text></TouchableOpacity>)}</ScrollView><TouchableOpacity style={s.apply} onPress={() => setFiltersOpen(false)}><Text style={s.applyText}>Apply Filter ({filteredOwned.length})</Text></TouchableOpacity></View></View>
       </Modal>
     </View>
   );
@@ -218,6 +231,7 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
   },
   pickerTitle: { color: colors.text, fontSize: 20, fontWeight: "700" },
+  search: { marginHorizontal:18, marginBottom:16, height:46, borderRadius:12, borderWidth:1, borderColor:colors.border, backgroundColor:colors.card, color:colors.text, paddingHorizontal:14 },
   done: { color: colors.purple, fontWeight: "800" },
   pickerGrid: {
     paddingHorizontal: 18,
@@ -228,4 +242,5 @@ const s = StyleSheet.create({
   pick: { width: "30.8%" },
   pickImage: { width: "100%", aspectRatio: 0.716 },
   pickName: { color: colors.text, fontSize: 9, marginTop: 4 },
+  backdrop:{flex:1,backgroundColor:"rgba(0,0,0,.7)",justifyContent:"flex-end"},sheet:{maxHeight:"70%",backgroundColor:colors.bg,borderTopLeftRadius:24,borderTopRightRadius:24,padding:22,paddingBottom:34,borderWidth:1,borderColor:colors.border},sheetHead:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginBottom:18},chips:{flexDirection:"row",flexWrap:"wrap",gap:8},chip:{paddingHorizontal:13,paddingVertical:9,borderRadius:18,borderWidth:1,borderColor:colors.border},chipOn:{borderColor:colors.purple,backgroundColor:colors.purpleSoft},chipText:{color:colors.textSecondary,fontSize:11},chipTextOn:{color:colors.purple,fontWeight:"800"},apply:{height:50,borderRadius:12,backgroundColor:colors.purple,alignItems:"center",justifyContent:"center",marginTop:20},applyText:{color:colors.bg,fontWeight:"800"},
 });

@@ -14,6 +14,7 @@ import {
   getMissingRequirements,
   getSetRequirements,
 } from "../lib/collectibles";
+import { applyCardFilters, setFilterKey } from "../lib/cardFilters";
 export default function MissingListScreen({
   goBack,
   navigate,
@@ -21,6 +22,7 @@ export default function MissingListScreen({
   binders = [],
   collectionQuantities = {},
   addRequirementsToWishlist = () => {},
+  setFiltersByKey = {},
 }) {
   const binder = binders.find((x) => x.id === params.binderId);
   const set = getSetById(binder?.setId || params.setId);
@@ -28,14 +30,16 @@ export default function MissingListScreen({
     () => getSetRequirements(set, binder?.tier || params.tier),
     [set, binder?.tier, params.tier],
   );
-  const missing = useMemo(
+  const allMissing = useMemo(
     () => getMissingRequirements(requirements, collectionQuantities),
     [requirements, collectionQuantities],
   );
+  const filterKey = setFilterKey(set?.id, binder?.tier || params.tier);
+  const missing = useMemo(() => applyCardFilters(allMissing, setFiltersByKey[filterKey], collectionQuantities), [allMissing, setFiltersByKey, filterKey, collectionQuantities]);
   const [added, setAdded] = useState(false);
   const percent = requirements.length
     ? Math.round(
-        ((requirements.length - missing.length) / requirements.length) * 100,
+        ((requirements.length - allMissing.length) / requirements.length) * 100,
       )
     : 0;
   return (

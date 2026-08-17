@@ -37,6 +37,7 @@ import {
 } from "./lib/collectibles";
 import { CARD_LIBRARY, getCardById, SETS } from "./data";
 import { calculateInsights } from "./lib/collectorAnalytics";
+import { DEFAULT_SET_FILTERS } from "./lib/cardFilters";
 import { evaluateMilestones } from "./lib/milestones";
 import { createHistoryEvent } from "./lib/history";
 import {
@@ -418,6 +419,9 @@ export default function App() {
   const [collectionFilters, setCollectionFilters] = useState(
     DEFAULT_COLLECTION_FILTERS,
   );
+  const [setFiltersByKey, setSetFiltersByKey] = useState({});
+  const updateSetFilters = (key, filters) =>
+    setSetFiltersByKey((current) => ({ ...current, [key]: { ...DEFAULT_SET_FILTERS, ...filters } }));
   const [userProfile, setUserProfile] = useState({
     displayName: "",
     email: "",
@@ -1154,6 +1158,8 @@ export default function App() {
     updateRawAcquisition,
     collectionFilters,
     setCollectionFilters,
+    setFiltersByKey,
+    updateSetFilters,
     logOut,
   };
   const Screen =

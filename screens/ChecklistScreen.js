@@ -5,15 +5,18 @@ import { colors } from '../theme';
 import { getSetById } from '../data';
 import { getSetRequirements, isOwned } from '../lib/collectibles';
 import { getLiveSetValuations } from '../lib/liveSetValuation';
+import { applyCardFilters, setFilterKey } from '../lib/cardFilters';
 
-export default function ChecklistScreen({ navigate, goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {} }) {
+export default function ChecklistScreen({ navigate, goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {}, setFiltersByKey = {} }) {
   const setId = params.setId || 'pitch-black';
   const set = getSetById(setId);
   const tier = String(params.tier || 'master').toLowerCase();
-  const cards = useMemo(() => getSetRequirements(set, tier), [set, tier]);
-  const ownedById = useMemo(() => Object.fromEntries(cards.map((card) => [card.id, isOwned(collectionQuantities, card)])), [cards, collectionQuantities]);
-  const ownedCount = cards.reduce((sum, card) => sum + (ownedById[card.id] ? 1 : 0), 0);
-  const percent = cards.length ? (ownedCount / cards.length) * 100 : 0;
+  const requirements = useMemo(() => getSetRequirements(set, tier), [set, tier]);
+  const filterKey = setFilterKey(set?.id, tier);
+  const cards = useMemo(() => applyCardFilters(requirements, setFiltersByKey[filterKey], collectionQuantities), [requirements, setFiltersByKey, filterKey, collectionQuantities]);
+  const ownedById = useMemo(() => Object.fromEntries(requirements.map((card) => [card.id, isOwned(collectionQuantities, card)])), [requirements, collectionQuantities]);
+  const ownedCount = requirements.reduce((sum, card) => sum + (ownedById[card.id] ? 1 : 0), 0);
+  const percent = requirements.length ? (ownedCount / requirements.length) * 100 : 0;
   const [pricing, setPricing] = useState({ status: 'loading' });
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
           <Ionicons name="chevron-back" size={20} color="#f4f4f5" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{set.name}</Text>
-        <TouchableOpacity style={styles.headerAction} onPress={() => navigate('SetFilters', { setId: set.id, tier, cardCount: cards.length })} hitSlop={10} accessibilityLabel="Filters">
+        <TouchableOpacity style={styles.headerAction} onPress={() => navigate('SetFilters', { setId: set.id, tier, cardCount: requirements.length })} hitSlop={10} accessibilityLabel="Filters">
           <Ionicons name="options-outline" size={18} color="#f4f4f5" />
         </TouchableOpacity>
       </View>
@@ -46,7 +49,7 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
         <View style={styles.statsRow}>
           <View>
             <Text style={styles.eyebrow}>{tier.toUpperCase()} INDEX PROGRESS</Text>
-            <Text style={styles.count}>{ownedCount} / {cards.length}</Text>
+            <Text style={styles.count}>{ownedCount} / {requirements.length}</Text>
           </View>
           <Text style={styles.percent}>{percent.toFixed(1)}% Complete</Text>
         </View>
@@ -79,6 +82,7 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
             </View>
           );
         })}
+        {!cards.length ? <Text style={styles.noResults}>No cards match these filters.</Text> : null}
       </ScrollView>
     </View>
   );
@@ -111,4 +115,5 @@ const styles = StyleSheet.create({
   finish: { maxWidth: '68%', color: '#a1a1aa', fontSize: 12 },
   value: { color: colors.purple, fontSize: 12 },
   pricePending: { color: '#71717a', fontSize: 11 },
+  noResults: { color: '#a1a1aa', textAlign: 'center', marginTop: 36, fontSize: 13 },
 });
