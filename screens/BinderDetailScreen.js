@@ -31,7 +31,7 @@ export default function BinderDetailScreen({
   binders = [],
   removeCardFromBinder = () => {},
 }) {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState(() =>
     Math.max(0, Number(params.page) || 0),
   );
@@ -52,13 +52,27 @@ export default function BinderDetailScreen({
   const pageCapacity = pocketLayout === 24 ? 12 : pocketLayout;
   const compactCards = true;
   const columns = pocketLayout === 9 ? 3 : 4;
+  const rows = Math.ceil(pageCapacity / columns);
   // Viewport minus the screen inset, page margins/borders, and grid padding.
   // Keeping this derived from the actual window width guarantees 3 × 3 and
   // 4-column pages do not wrap when the surrounding screen padding changes.
   const pageContentWidth = width - 40 - 32 - 2 - 16;
-  const cardWidth = Math.floor(
+  const horizontalCardWidth = Math.floor(
     (pageContentWidth - GAP * (columns - 1)) / columns,
   );
+  // A binder page is intended to be visible as one physical page. Scale its
+  // pockets against the remaining vertical space, while preserving a usable
+  // minimum on unusually short screens (where the outer ScrollView is the
+  // accessibility fallback).
+  const availableGridHeight = Math.max(300, height - 420);
+  const verticalCardWidth = Math.floor(
+    (availableGridHeight / rows - 36 - GAP) / 1.28,
+  );
+  const cardWidth = Math.min(
+    horizontalCardWidth,
+    Math.max(columns === 4 ? 54 : 64, verticalCardWidth),
+  );
+  const cardImageHeight = Math.round(cardWidth * 1.28);
   const isFreeform = savedBinder?.kind === "freeform";
   const requirementSlots = useMemo(
     () => getGeneratedBinderSlots(binder, tier),
@@ -144,6 +158,7 @@ export default function BinderDetailScreen({
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      nestedScrollEnabled
     >
       <RegistryHeader
         title={savedBinder?.name || binder.name}
@@ -282,7 +297,7 @@ export default function BinderDetailScreen({
                   style={[
                     styles.cardTile,
                     styles.emptyPocket,
-                    { width: cardWidth, minHeight: cardWidth * 1.65 },
+                    { width: cardWidth, minHeight: cardImageHeight + 34 },
                   ]}
                 >
                   <Text style={styles.emptyPocketNumber}>{slotIndex + 1}</Text>
@@ -307,7 +322,7 @@ export default function BinderDetailScreen({
                     style={[
                       styles.cardImage,
                       showMissing && !owned && styles.missingArtwork,
-                      { height: cardWidth * 1.4 },
+                      { height: cardImageHeight },
                     ]}
                     resizeMode="contain"
                   />
@@ -403,7 +418,7 @@ export default function BinderDetailScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
-  content: { paddingBottom: 36 },
+  content: { paddingBottom: 18 },
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -544,11 +559,12 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "center",
     gap: GAP,
     paddingHorizontal: 8,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
-  cardTile: { marginBottom: 16, position: "relative" },
+  cardTile: { position: "relative" },
   pocket: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -589,13 +605,13 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: 6,
   },
-  cardNumber: { color: colors.textTertiary, fontSize: 10, marginTop: 1 },
-  cardVariant: { color: colors.textSecondary, fontSize: 9, marginTop: 2 },
+  cardNumber: { color: colors.textTertiary, fontSize: 8, marginTop: 1 },
+  cardVariant: { color: colors.textSecondary, fontSize: 8, marginTop: 1 },
   cardValue: {
     color: colors.purple,
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: "600",
-    marginTop: 3,
+    marginTop: 1,
   },
   cardMetaRow: {
     flexDirection: "row",
@@ -604,15 +620,15 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 2,
   },
-  compactMetaRow: { display: "flex", alignItems: "flex-start", minHeight: 32 },
+  compactMetaRow: { display: "flex", alignItems: "flex-start", minHeight: 25 },
   cardMetaText: { flex: 1, minWidth: 0 },
   compactCollect: {
     position: "absolute",
     top: 5,
     right: 5,
-    width: 27,
-    height: 27,
-    borderRadius: 14,
+    width: 23,
+    height: 23,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.text,
     backgroundColor: "rgba(0,0,0,0.62)",
@@ -625,7 +641,7 @@ const styles = StyleSheet.create({
   },
   compactCollectText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
     lineHeight: 17,
   },
