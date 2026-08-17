@@ -1,78 +1,45 @@
-
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { useAppContext } from '../AppContext';
+import { RegistrySettingsHeader, RegistryToggle, registrySettingsStyles as shared } from '../components/RegistrySettingsUi';
 
-const ACCENTS = ['#D6B42C', '#8B5CF6', '#3B82F6', '#22C55E', '#F97316', '#EC4899'];
+const ACCENTS = ['#D6B42C', '#16C79A', '#3B82F6', '#8B5CF6', '#EC4899'];
+const MODES = [{ value: 'Dark', label: 'Dark Mode', icon: 'moon-outline' }, { value: 'Light', label: 'Light Mode', icon: 'sunny-outline' }, { value: 'System', label: 'System', icon: 'desktop-outline' }];
 
 export default function AppearanceScreen({ goBack }) {
   const { preferences, updatePreferences } = useAppContext();
   const theme = preferences.theme || 'Dark';
   const accent = preferences.accent || ACCENTS[0];
   const density = preferences.density || 'Comfortable';
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} hitSlop={12}>
-          <Text style={styles.back}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>APPEARANCE</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <Text style={styles.label}>THEME</Text>
-      <View style={styles.themeRow}>
-        {['Dark', 'Light'].map((t) => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.themeChip, theme === t && styles.themeChipActive]}
-            onPress={() => updatePreferences({ theme: t })}
-          >
-            <Text style={[styles.themeChipText, theme === t && styles.themeChipTextActive]}>{t}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={styles.label}>ACCENT COLOR</Text>
-      <View style={styles.swatchRow}>
-        {ACCENTS.map((c) => (
-          <TouchableOpacity key={c} onPress={() => updatePreferences({ accent: c })} style={styles.swatchWrap}>
-            <View style={[styles.swatch, { backgroundColor: c }, accent === c && styles.swatchActive]} />
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={styles.label}>DENSITY</Text>
-      <View style={styles.themeRow}>
-        {['Comfortable', 'Compact'].map((d) => (
-          <TouchableOpacity
-            key={d}
-            style={[styles.themeChip, density === d && styles.themeChipActive]}
-            onPress={() => updatePreferences({ density: d })}
-          >
-            <Text style={[styles.themeChipText, density === d && styles.themeChipTextActive]}>{d}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+  const animations = preferences.animations !== false;
+  return <View style={shared.page}>
+    <RegistrySettingsHeader title="Appearance" eyebrow="Display Architecture" goBack={goBack} />
+    <View style={shared.content}>
+      <Text style={shared.sectionLabel}>Registry Theme Mode</Text>
+      <View style={s.modeRow}>{MODES.map(mode => <TouchableOpacity key={mode.value} style={[s.modeCard, theme === mode.value && s.active]} onPress={() => updatePreferences({ theme: mode.value })}><Ionicons name={mode.icon} size={24} color={theme === mode.value ? colors.purple : colors.textTertiary} /><Text style={[s.modeText, theme === mode.value && s.activeText]}>{mode.label}</Text></TouchableOpacity>)}</View>
+      <Text style={shared.sectionLabel}>Active Accent Palette</Text>
+      <View style={[shared.panel, s.accents]}>{ACCENTS.map(value => <TouchableOpacity key={value} style={[s.accentRing, accent === value && { borderColor: value }]} onPress={() => updatePreferences({ accent: value })}><View style={[s.accentDot, { backgroundColor: value }]} /></TouchableOpacity>)}</View>
+      <Text style={shared.sectionLabel}>Index Display Layout</Text>
+      <View style={[shared.panel, s.segment]}>{[['Compact','Small'],['Comfortable','Medium'],['Large','Large']].map(([value,label]) => <TouchableOpacity key={value} style={[s.segmentItem, density === value && s.segmentOn]} onPress={() => updatePreferences({ density: value })}><Text style={[s.segmentText, density === value && s.activeText]}>{label}</Text></TouchableOpacity>)}</View>
+      <View style={s.animation}><RegistryToggle title="Interface Animations" description="Smooth motion effects and transitions" value={animations} onChange={value => updatePreferences({ animations: value })} /></View>
     </View>
-  );
+  </View>;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 },
-  back: { color: colors.text, fontSize: 28, fontWeight: '300', width: 24 },
-  title: { color: colors.text, fontSize: 13, fontWeight: '600', letterSpacing: 1.5 },
-  label: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1.5, marginTop: 30 },
-  themeRow: { flexDirection: 'row', marginTop: 12 },
-  themeChip: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: colors.border, marginRight: 10 },
-  themeChipActive: { backgroundColor: colors.purple, borderColor: colors.purple },
-  themeChipText: { color: colors.textSecondary, fontSize: 13 },
-  themeChipTextActive: { color: colors.text, fontWeight: '600' },
-  swatchRow: { flexDirection: 'row', marginTop: 14 },
-  swatchWrap: { marginRight: 14 },
-  swatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: 'transparent' },
-  swatchActive: { borderColor: colors.text },
+const s = StyleSheet.create({
+  modeRow: { flexDirection: 'row', gap: 12 },
+  modeCard: { flex: 1, height: 86, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', gap: 11 },
+  active: { borderColor: colors.purple, borderWidth: 1.5 },
+  modeText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
+  activeText: { color: colors.purple },
+  accents: { height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 10 },
+  accentRing: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  accentDot: { width: 22, height: 22, borderRadius: 11 },
+  segment: { height: 48, padding: 4, flexDirection: 'row' },
+  segmentItem: { flex: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  segmentOn: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+  segmentText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  animation: { marginTop: 24 },
 });

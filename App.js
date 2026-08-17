@@ -55,6 +55,8 @@ const DEFAULT_PREFERENCES = {
   theme: "Dark",
   accent: "#D6B42C",
   density: "Comfortable",
+  language: "English (US)",
+  animations: true,
   currency: "EUR",
   notifications: {
     wishlistPriceDrops: true,
@@ -622,9 +624,7 @@ export default function App() {
 
   useEffect(() => {
     if (typeof Appearance.setColorScheme === "function") {
-      Appearance.setColorScheme(
-        preferences.theme === "Light" ? "light" : "dark",
-      );
+      Appearance.setColorScheme(preferences.theme === "System" ? null : preferences.theme === "Light" ? "light" : "dark");
     }
   }, [preferences.theme]);
 
@@ -763,11 +763,11 @@ export default function App() {
     screenEntrance.setValue(0);
     Animated.timing(screenEntrance, {
       toValue: 1,
-      duration: 240,
+      duration: preferences.animations === false ? 0 : 240,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [current.path, screenEntrance]);
+  }, [current.path, preferences.animations, screenEntrance]);
   useEffect(() => {
     stackRef.current = stack;
   }, [stack]);
@@ -1084,7 +1084,12 @@ export default function App() {
     if (error) throw error;
   };
 
-  setThemeSettings(preferences);
+  setThemeSettings({
+    ...preferences,
+    theme: preferences.theme === "System"
+      ? (Appearance.getColorScheme() === "light" ? "Light" : "Dark")
+      : preferences.theme,
+  });
   const screenProps = {
     navigate,
     goBack,

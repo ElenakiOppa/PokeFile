@@ -1,45 +1,19 @@
-
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
-import BrandLogo from '../components/BrandLogo';
-import SettingsRow from '../components/SettingsRow';
+import { RegistryMenuRow, RegistrySettingsHeader, registrySettingsStyles as shared } from '../components/RegistrySettingsUi';
 
 export default function AboutScreen({ goBack }) {
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} hitSlop={12}>
-          <Text style={styles.back}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>ABOUT</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <View style={styles.brandBlock}>
-        <BrandLogo width={190} />
-        <Text style={styles.tagline}>Collector</Text>
-        <Text style={styles.version}>v1.0.0</Text>
-      </View>
-
-      <Text style={styles.disclaimer}>Data provided by Pokémon TCG API</Text>
-
-      <View style={{ marginTop: 20 }}>
-        <SettingsRow label="Terms of Use" type="chevron" />
-        <SettingsRow label="Privacy Policy" type="chevron" />
-        <SettingsRow label="Licenses" type="chevron" />
-      </View>
-    </View>
-  );
+  const open = url => Linking.openURL(url).catch(() => Alert.alert('Unavailable','This page could not be opened.'));
+  return <View style={shared.page}><RegistrySettingsHeader title="About" eyebrow="Registry Identity" goBack={goBack} /><View style={shared.content}>
+    <View style={s.brand}><View style={s.mark}><View style={s.markLine} /><View style={s.markCenter} /></View><Text style={s.name}>POKÉFILE</Text><Text style={s.tag}>PREMIUM COLLECTION INDEX</Text><Text style={s.version}>VERSION 1.0.0</Text></View>
+    <RegistryMenuRow icon="shield-checkmark-outline" title="Security & Privacy Policy" onPress={() => open('https://pokehaus.shop/privacy-policy')} />
+    <RegistryMenuRow icon="document-text-outline" title="Terms of Service" onPress={() => open('https://pokehaus.shop/terms-and-conditions')} />
+    <RegistryMenuRow icon="git-branch-outline" title="Open Source Licenses & Attributions" onPress={() => Alert.alert('Open source licenses','Pokéfile uses Expo, React Native, Supabase, TCGdex, Scrydex and provider-backed Pokémon catalog data.')} />
+    <RegistryMenuRow icon="star-outline" title="Rate Pokéfile" value="5 Stars" onPress={() => Alert.alert('Thank you','Store rating will be available when Pokéfile is published.')} />
+    <RegistryMenuRow icon="mail-outline" title="Contact Support" onPress={() => open('mailto:support@pokehaus.shop')} />
+    <Text style={s.socialLabel}>Join our collector network</Text><View style={s.socials}>{['logo-instagram','logo-twitter','globe-outline'].map(icon => <TouchableOpacity key={icon} style={s.social} onPress={() => open('https://pokehaus.shop')}><Ionicons name={icon} size={19} color={colors.purple} /></TouchableOpacity>)}</View>
+  </View></View>;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 },
-  back: { color: colors.text, fontSize: 28, fontWeight: '300', width: 24 },
-  title: { color: colors.text, fontSize: 13, fontWeight: '600', letterSpacing: 1.5 },
-  brandBlock: { alignItems: 'center', marginTop: 40 },
-  tagline: { color: colors.textSecondary, fontSize: 13, marginTop: 6 },
-  version: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  disclaimer: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 20 },
-});
+const s=StyleSheet.create({brand:{alignItems:'center',paddingVertical:10,marginBottom:24},mark:{width:64,height:64,borderRadius:32,backgroundColor:colors.purple,alignItems:'center',justifyContent:'center'},markLine:{position:'absolute',left:0,right:0,height:8,backgroundColor:colors.bg},markCenter:{width:19,height:19,borderRadius:10,borderWidth:3,borderColor:colors.bg,backgroundColor:colors.purple},name:{color:colors.text,fontSize:25,fontWeight:'800',marginTop:16},tag:{color:colors.purple,fontSize:10,fontWeight:'700',marginTop:3},version:{color:colors.textTertiary,fontSize:9,marginTop:6},socialLabel:{color:colors.textTertiary,fontSize:9,textTransform:'uppercase',textAlign:'center',marginTop:20},socials:{flexDirection:'row',justifyContent:'center',gap:12,marginTop:12},social:{width:44,height:44,borderRadius:12,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,alignItems:'center',justifyContent:'center'}});
