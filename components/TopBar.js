@@ -57,14 +57,15 @@ export default function TopBar({
 
 const styles = StyleSheet.create({
   row: {
+    minHeight: 58,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 10,
-    paddingBottom: 6,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  menuBtn: { justifyContent: 'center', width: 24 },
+  menuBtn: { justifyContent: 'center', alignItems: 'center', width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   menuLine: {
     width: 22,
     height: 1.5,
@@ -72,12 +73,12 @@ const styles = StyleSheet.create({
     marginVertical: 2,
     borderRadius: 1,
   },
-  iconBtn: { width: 24 },
-  chevron: { color: colors.text, fontSize: 28, fontWeight: '300' },
+  iconBtn: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  chevron: { color: colors.text, fontSize: 24, lineHeight: 26, fontWeight: '300' },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     justifyContent: 'center',

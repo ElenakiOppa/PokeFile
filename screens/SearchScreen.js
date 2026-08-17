@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { colors } from '../theme';
 import { CARD_LIBRARY, SETS } from '../data';
+import RegistryHeader from '../components/RegistryHeader';
 
 const RECENT = [
   ...CARD_LIBRARY.slice(0, 3).map((card) => ({ id: card.id, label: card.name, type: 'card' })),
@@ -41,14 +42,11 @@ export default function SearchScreen({ navigate, goBack, binders = [] }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} hitSlop={12}>
-          <Text style={styles.back}>‹</Text>
-        </TouchableOpacity>
+      <RegistryHeader eyebrow="POKEFILE INDEX" title="Scan & Search" onBack={goBack} />
+      <View style={styles.hero}>
+        <Text style={styles.heroTitle}>Find any collectible.</Text>
+        <Text style={styles.heroMeta}>Search the live Pokéfile card, set and binder index.</Text>
       </View>
-
-      <Text style={styles.title}>SEARCH</Text>
-
       <View style={styles.inputRow}>
         <Text style={styles.searchIcon}>⌕</Text>
         <TextInput
@@ -64,7 +62,7 @@ export default function SearchScreen({ navigate, goBack, binders = [] }) {
         {normalizedQuery ? <><Text style={styles.sectionLabel}>RESULTS</Text>
         {results.length ? results.map((item) => (
           <TouchableOpacity key={`${item.type}-${item.id}`} style={styles.rowItem} onPress={() => handleResultPress(item)}>
-            <Text style={styles.rowIcon}>→</Text><Text style={styles.rowText}>{item.label}</Text>
+            {item.type === 'card' ? <Image source={{ uri: CARD_LIBRARY.find((card) => card.id === item.id)?.image }} style={styles.resultImage} resizeMode="contain" /> : <View style={styles.resultMark}><Text style={styles.rowIcon}>→</Text></View>}<Text style={styles.rowText}>{item.label}</Text>
           </TouchableOpacity>
         )) : <TouchableOpacity style={styles.rowItem} onPress={() => navigate('NoSearchResults')}><Text style={styles.rowText}>No results. View search help →</Text></TouchableOpacity>}</> : <>
         <Text style={styles.sectionLabel}>RECENT SEARCHES</Text>
@@ -89,18 +87,20 @@ export default function SearchScreen({ navigate, goBack, binders = [] }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24 },
-  header: { flexDirection: 'row', paddingTop: 16 },
-  back: { color: colors.text, fontSize: 28, fontWeight: '300' },
-  title: { color: colors.text, fontSize: 36, fontWeight: '300', marginTop: 12 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  hero: { paddingHorizontal: 16, paddingTop: 20 },
+  heroTitle: { color: colors.text, fontSize: 24, fontWeight: '700' },
+  heroMeta: { color: colors.textSecondary, fontSize: 11, marginTop: 5 },
   inputRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
-    borderRadius: 12, paddingHorizontal: 14, marginTop: 20, height: 46,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
+    borderRadius: 13, borderWidth: 1, borderColor: colors.purple, paddingHorizontal: 14, marginTop: 18, marginHorizontal: 14, height: 50,
   },
   searchIcon: { color: colors.textSecondary, fontSize: 16, marginRight: 8 },
   input: { flex: 1, color: colors.text, fontSize: 14 },
-  sectionLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1.5, marginTop: 28, marginBottom: 8 },
-  rowItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  sectionLabel: { color: colors.purple, fontSize: 9, fontWeight: '800', letterSpacing: 1.2, marginTop: 24, marginBottom: 8, marginHorizontal: 14 },
+  rowItem: { minHeight: 58, flexDirection: 'row', alignItems: 'center', marginHorizontal: 14, marginBottom: 7, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   rowIcon: { color: colors.textSecondary, fontSize: 14, width: 24 },
-  rowText: { color: colors.text, fontSize: 15 },
+  rowText: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600' },
+  resultImage: { width: 34, height: 46, marginRight: 10 },
+  resultMark: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border, marginRight: 10, alignItems: 'center', justifyContent: 'center', paddingLeft: 7 },
 });

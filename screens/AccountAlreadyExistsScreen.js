@@ -33,9 +33,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   icon: { fontSize: 24, color: colors.purple, fontWeight: '700' },
-  title: { color: colors.text, fontSize: 22, fontWeight: '500', marginTop: 24, textAlign: 'center' },
+  title: { color: colors.text, fontSize: 25, fontWeight: '700', marginTop: 24, textAlign: 'center' },
   subtitle: { color: colors.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 12, lineHeight: 20 },
-  primaryBtn: { backgroundColor: colors.purple, borderRadius: 24, paddingVertical: 16, alignItems: 'center', marginTop: 32, width: '100%' },
-  primaryText: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  primaryBtn: { backgroundColor: colors.purple, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 32, width: '100%' },
+  primaryText: { color: colors.bg, fontSize: 15, fontWeight: '800' },
   secondaryLink: { color: colors.textSecondary, fontSize: 13, marginTop: 20 },
 });

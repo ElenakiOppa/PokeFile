@@ -44,9 +44,10 @@ export default function SettingsRow({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 16, borderTopWidth: 1, borderTopColor: colors.border,
+    minHeight: 58, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: colors.border,
+    borderRadius: 12, backgroundColor: colors.surface, marginBottom: 8,
   },
-  label: { color: colors.text, fontSize: 15 },
+  label: { color: colors.text, fontSize: 13, fontWeight: '700' },
   sublabel: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   right: { flexDirection: 'row', alignItems: 'center' },
   value: { color: colors.textSecondary, fontSize: 14, marginRight: 8 },

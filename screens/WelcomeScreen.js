@@ -1,74 +1,49 @@
-
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import BrandLogo from '../components/BrandLogo';
 
 export default function WelcomeScreen({ navigate }) {
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
       <View style={styles.hero}>
-        <BrandLogo width={190} />
+        <View style={styles.logoRing}><BrandLogo width={164} /></View>
+        <Text style={styles.eyebrow}>PRIVATE COLLECTOR REGISTRY</Text>
+        <Text style={styles.title}>Your collection.{`\n`}Indexed.</Text>
+        <Text style={styles.subtitle}>Track cards, complete sets, build binders and understand the value of everything you own.</Text>
       </View>
-
-      <View style={styles.content}>
-        <Text style={styles.brand}>POKEFILE</Text>
-        <Text style={styles.tagline}>Track, organize, and complete your Pokémon TCG collection.</Text>
-
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => navigate('Signup')}>
-          <Text style={styles.primaryText}>Create Account</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.secondaryBtn} onPress={() => navigate('SignIn')}>
-          <Text style={styles.secondaryText}>Log In</Text>
-        </TouchableOpacity>
-
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
+      <View style={styles.sheet}>
+        <TouchableOpacity style={styles.primary} onPress={() => navigate('Signup')}><Text style={styles.primaryText}>Create Account</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.secondary} onPress={() => navigate('SignIn')}><Text style={styles.secondaryText}>Log In</Text></TouchableOpacity>
+        <View style={styles.divider}><View style={styles.line} /><Text style={styles.or}>OR CONTINUE WITH</Text><View style={styles.line} /></View>
         <View style={styles.socialRow}>
-          <TouchableOpacity style={styles.socialBtn} onPress={() => navigate('SocialAuthConfirm', { provider: 'Apple' })}>
-            <Text style={styles.socialText}> Apple</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialBtn} onPress={() => navigate('SocialAuthConfirm', { provider: 'Google' })}>
-            <Text style={styles.socialText}>G Google</Text>
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.social} onPress={() => navigate('SocialAuthConfirm', { provider: 'Apple' })}><Ionicons name="logo-apple" size={17} color={colors.text} /><Text style={styles.socialText}>Apple</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.social} onPress={() => navigate('SocialAuthConfirm', { provider: 'Google' })}><Ionicons name="logo-google" size={16} color={colors.text} /><Text style={styles.socialText}>Google</Text></TouchableOpacity>
         </View>
-
-        <Text style={styles.terms}>
-          By continuing, you agree to our <Text style={styles.termsLink}>Terms</Text> and{' '}
-          <Text style={styles.termsLink}>Privacy Policy</Text>.
-        </Text>
+        <Text style={styles.terms}>By continuing, you agree to Pokéfile’s Terms and Privacy Policy.</Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  hero: { height: '27%', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
-  content: { flex: 1, paddingHorizontal: 24, paddingTop: 8 },
-  brand: { color: colors.text, fontSize: 22, fontWeight: '600', letterSpacing: 4, textAlign: 'center' },
-  tagline: { color: colors.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 12, lineHeight: 20, paddingHorizontal: 10 },
-  primaryBtn: { backgroundColor: colors.purple, borderRadius: 24, paddingVertical: 16, alignItems: 'center', marginTop: 32 },
-  primaryText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  secondaryBtn: {
-    borderRadius: 24, paddingVertical: 16, alignItems: 'center', marginTop: 12,
-    borderWidth: 1, borderColor: colors.borderStrong,
-  },
-  secondaryText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 28 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  dividerText: { color: colors.textTertiary, fontSize: 10, fontWeight: '600', letterSpacing: 1, marginHorizontal: 12 },
-  socialRow: { flexDirection: 'row', marginTop: 20 },
-  socialBtn: {
-    flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 14,
-    alignItems: 'center', marginHorizontal: 4,
-  },
-  socialText: { color: colors.text, fontSize: 14, fontWeight: '500' },
-  terms: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 24, lineHeight: 16 },
-  termsLink: { color: colors.textSecondary, fontWeight: '600' },
+  screen: { flex: 1, backgroundColor: colors.bg, justifyContent: 'space-between' },
+  hero: { flex: 1, paddingHorizontal: 24, paddingTop: 54, justifyContent: 'center' },
+  logoRing: { alignSelf: 'flex-start', paddingVertical: 16 },
+  eyebrow: { color: colors.purple, fontSize: 9, fontWeight: '800', letterSpacing: 1.2, marginTop: 22 },
+  title: { color: colors.text, fontSize: 43, lineHeight: 47, fontWeight: '700', marginTop: 10 },
+  subtitle: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, maxWidth: 330, marginTop: 14 },
+  sheet: { borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 22, paddingTop: 22, paddingBottom: 30 },
+  primary: { minHeight: 52, borderRadius: 14, backgroundColor: colors.purple, alignItems: 'center', justifyContent: 'center' },
+  primaryText: { color: colors.bg, fontSize: 14, fontWeight: '800' },
+  secondary: { minHeight: 50, borderRadius: 14, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  secondaryText: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 18 },
+  line: { flex: 1, height: 1, backgroundColor: colors.border },
+  or: { color: colors.textTertiary, fontSize: 8, fontWeight: '700', letterSpacing: 1, marginHorizontal: 11 },
+  socialRow: { flexDirection: 'row', gap: 9 },
+  social: { flex: 1, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  socialText: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  terms: { color: colors.textTertiary, fontSize: 9, textAlign: 'center', marginTop: 16 },
 });

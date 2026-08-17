@@ -7,7 +7,7 @@ import { calculateVaultPortfolio, formatMoney } from '../lib/valueEngine';
 import { useAppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
-const ACQUISITION_WIDTH = Math.min(154, width * 0.39);
+const ACQUISITION_WIDTH = Math.min(190, width * 0.46);
 
 export default function HomeScreen({ navigate, binders = [], collectionQuantities = {}, vaultAssets = [], rawAcquisitions = {}, valueSnapshots = [] }) {
   const { preferences } = useAppContext();
@@ -59,7 +59,7 @@ export default function HomeScreen({ navigate, binders = [], collectionQuantitie
       <View style={styles.gainerList}>
         {gainers.map((card, index) => (
           <TouchableOpacity key={card.id} style={styles.gainerRow} onPress={() => navigate('CardDetail', { cardId: card.id })}>
-            <View style={styles.goldDot} />
+            <Image source={{ uri: card.image }} style={styles.gainerImage} resizeMode="contain" />
             <View style={styles.gainerCopy}><Text style={styles.gainerName} numberOfLines={1}>{card.name}{card.number ? ` #${card.number}` : ''}</Text><Text style={styles.gainerMeta} numberOfLines={1}>{card.setName || card.setId || 'Pokéfile Index'}</Text></View>
             <View style={styles.gainerValueWrap}><Text style={styles.gainerValue}>{formatMoney(Number(card.value || 0), currency)}</Text><Text style={styles.gainerChange}>{index === 0 ? 'INDEX LEADER' : 'MARKET TRACKED'}</Text></View>
           </TouchableOpacity>
@@ -96,14 +96,14 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.textSecondary, fontSize: 9, fontWeight: '600' },
   sectionAction: { color: colors.purple, fontSize: 8, fontWeight: '700' },
   acquisitionRow: { paddingHorizontal: 14, gap: 10 },
-  acquisitionCard: { width: ACQUISITION_WIDTH, minHeight: 182, borderRadius: 13, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 9 },
-  acquisitionImageWell: { width: '100%', height: 123, borderRadius: 9, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  acquisitionImage: { width: '88%', height: '94%' },
+  acquisitionCard: { width: ACQUISITION_WIDTH, minHeight: 246, borderRadius: 13, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 9 },
+  acquisitionImageWell: { width: '100%', height: 188, borderRadius: 9, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  acquisitionImage: { width: '100%', height: '100%' },
   acquisitionName: { color: colors.text, fontSize: 11, fontWeight: '700', marginTop: 8 },
   acquisitionMeta: { color: colors.purple, fontSize: 7, fontWeight: '600', marginTop: 2 },
   gainerList: { paddingHorizontal: 14, gap: 7 },
   gainerRow: { minHeight: 54, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center' },
-  goldDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.purple, marginRight: 10 },
+  gainerImage: { width: 32, height: 44, marginRight: 10 },
   gainerCopy: { flex: 1, minWidth: 0 },
   gainerName: { color: colors.text, fontSize: 10, fontWeight: '700' },
   gainerMeta: { color: colors.textTertiary, fontSize: 7, marginTop: 3 },
