@@ -53,7 +53,7 @@ const APP_STORAGE_KEY = "@pokefile/user-data-v1";
 const LEGACY_STORAGE_KEY = "@poke-haus/user-data-v1";
 const DEFAULT_PREFERENCES = {
   theme: "Dark",
-  accent: "#8B5CF6",
+  accent: "#D6B42C",
   density: "Comfortable",
   currency: "EUR",
   notifications: {
@@ -455,9 +455,13 @@ export default function App() {
         if (parsed.userProfile && typeof parsed.userProfile === "object")
           setUserProfile(parsed.userProfile);
         if (parsed.preferences && typeof parsed.preferences === "object") {
+          const migratedAccent = String(parsed.preferences.accent || "").toUpperCase() === "#8B5CF6"
+            ? DEFAULT_PREFERENCES.accent
+            : parsed.preferences.accent;
           setPreferences({
             ...DEFAULT_PREFERENCES,
             ...parsed.preferences,
+            accent: migratedAccent || DEFAULT_PREFERENCES.accent,
             notifications: {
               ...DEFAULT_PREFERENCES.notifications,
               ...parsed.preferences.notifications,

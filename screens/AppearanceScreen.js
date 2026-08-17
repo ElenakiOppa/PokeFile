@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../theme';
 import { useAppContext } from '../AppContext';
 
-const ACCENTS = ['#8B5CF6', '#3B82F6', '#22C55E', '#F97316', '#EC4899'];
+const ACCENTS = ['#D6B42C', '#8B5CF6', '#3B82F6', '#22C55E', '#F97316', '#EC4899'];
 
 export default function AppearanceScreen({ goBack }) {
   const { preferences, updatePreferences } = useAppContext();
