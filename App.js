@@ -849,7 +849,11 @@ export default function App() {
 
   const goBack = () => {
     setMenuOpen(false);
-    setStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    setStack((prev) =>
+      prev.length > 1
+        ? prev.slice(0, -1)
+        : [{ route: "Home", params: {}, path: buildScreenPath("Home") }],
+    );
   };
 
   const updateCurrentParams = (changes) => {

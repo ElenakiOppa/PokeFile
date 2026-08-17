@@ -30,6 +30,7 @@ export default function ValueHistoryScreen({ navigate, goBack, valueSnapshots = 
 
   return <View style={s.screen}>
     <VaultHeader title="Portfolio Analytics" goBack={goBack} />
+    <View style={s.vaultTabs}><VaultTab icon="shield-checkmark-outline" label="Overview" onPress={() => navigate("Vault")} /><VaultTab icon="add-circle-outline" label="Add Asset" onPress={() => navigate("AddVaultAsset")} /><VaultTab icon="analytics-outline" label="History" active onPress={() => {}} /></View>
     <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
       <Text style={s.curveLabel}>ACTIVE VALUE CURVE</Text>
       <Text style={s.total}>{formatMoney(last, currency)}</Text>
@@ -42,7 +43,6 @@ export default function ValueHistoryScreen({ navigate, goBack, valueSnapshots = 
         <Stat title="Vault Average" value={formatMoney(average, currency)} meta={`${points.length} value snapshots`} />
         <Stat title="Total Net Gain" value={`${change >= 0 ? "+" : ""}${formatMoney(change, currency)}`} meta="Since selected period" accent={change >= 0} loss={change < 0} />
       </View></View>
-      <View style={s.vaultTabs}><VaultTab icon="shield-checkmark-outline" label="Vault" onPress={() => navigate("Vault")} /><VaultTab icon="add-circle-outline" label="Add" onPress={() => navigate("AddGradedAsset")} /><VaultTab icon="analytics-outline" label="History" active onPress={() => {}} /></View>
     </ScrollView>
   </View>;
 }
@@ -51,10 +51,10 @@ const Stat = ({ title, value, meta, accent, loss }) => <View style={s.stat}><Tex
 const VaultTab = ({ icon, label, active, onPress }) => <TouchableOpacity style={s.vaultTab} onPress={onPress}><Ionicons name={icon} size={19} color={active ? colors.purple : colors.textTertiary} /><Text style={[s.vaultTabText, active && s.vaultTabActive]}>{label}</Text></TouchableOpacity>;
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg }, content: { paddingHorizontal: 24, paddingBottom: 18 },
-  curveLabel: { color: colors.textSecondary, fontSize: 10, textAlign: "center", marginTop: 8 }, total: { color: colors.text, fontSize: 32, fontWeight: "800", textAlign: "center", marginTop: 6 }, change: { color: "#10B981", fontSize: 9, fontWeight: "600", textAlign: "center", marginTop: 7 }, loss: { color: colors.red }, gain: { color: "#10B981" },
-  ranges: { height: 42, marginTop: 24, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 4, flexDirection: "row" }, range: { flex: 1, borderRadius: 9, alignItems: "center", justifyContent: "center" }, rangeOn: { borderWidth: 1, borderColor: colors.purple, backgroundColor: colors.purpleSoft }, rangeText: { color: colors.textSecondary, fontSize: 9, fontWeight: "600" }, rangeTextOn: { color: colors.purple, fontWeight: "800" },
-  chartPanel: { height: 205, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, marginTop: 16, padding: 16, justifyContent: "center" }, empty: { alignItems: "center" }, emptyTitle: { color: colors.text, fontSize: 13, fontWeight: "700" }, emptyText: { color: colors.textSecondary, fontSize: 9, marginTop: 6 },
-  statistics: { marginTop: 22 }, statsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10, marginTop: 12 }, stat: { width: "48.5%", minHeight: 90, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14 }, statTitle: { color: colors.textTertiary, fontSize: 9 }, statValue: { color: colors.text, fontSize: 16, fontWeight: "800", marginTop: 7 }, statMeta: { color: colors.textTertiary, fontSize: 7, marginTop: 5 },
-  vaultTabs: { height: 58, marginHorizontal: -24, marginTop: 24, paddingHorizontal: 24, borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: "row", justifyContent: "space-between" }, vaultTab: { width: 72, alignItems: "center", justifyContent: "center" }, vaultTabText: { color: colors.textTertiary, fontSize: 8, marginTop: 3 }, vaultTabActive: { color: colors.purple, fontWeight: "700" },
+  screen: { flex: 1, backgroundColor: colors.bg }, content: { paddingHorizontal: 20, paddingBottom: 38 },
+  curveLabel: { color: colors.textSecondary, fontSize: 12, textAlign: "center", marginTop: 14 }, total: { color: colors.text, fontSize: 40, fontWeight: "800", textAlign: "center", marginTop: 7 }, change: { color: "#10B981", fontSize: 12, fontWeight: "700", textAlign: "center", marginTop: 8 }, loss: { color: colors.red }, gain: { color: "#10B981" },
+  ranges: { height: 52, marginTop: 26, borderRadius: 15, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 4, flexDirection: "row" }, range: { flex: 1, borderRadius: 11, alignItems: "center", justifyContent: "center" }, rangeOn: { borderWidth: 1, borderColor: colors.purple, backgroundColor: colors.purpleSoft }, rangeText: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" }, rangeTextOn: { color: colors.purple, fontWeight: "800" },
+  chartPanel: { height: 245, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, marginTop: 18, padding: 18, justifyContent: "center" }, empty: { alignItems: "center" }, emptyTitle: { color: colors.text, fontSize: 16, fontWeight: "800" }, emptyText: { color: colors.textSecondary, fontSize: 11, marginTop: 7 },
+  statistics: { marginTop: 26 }, statsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12, marginTop: 14 }, stat: { width: "48.5%", minHeight: 112, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16 }, statTitle: { color: colors.textTertiary, fontSize: 10 }, statValue: { color: colors.text, fontSize: 19, fontWeight: "800", marginTop: 9 }, statMeta: { color: colors.textTertiary, fontSize: 9, marginTop: 7 },
+  vaultTabs: { height: 52, marginHorizontal: 20, marginBottom: 16, padding: 4, borderRadius: 15, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: "row" }, vaultTab: { flex: 1, borderRadius: 11, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" }, vaultTabText: { color: colors.textTertiary, fontSize: 10, fontWeight: "700" }, vaultTabActive: { color: colors.purple, fontWeight: "800" },
 });
