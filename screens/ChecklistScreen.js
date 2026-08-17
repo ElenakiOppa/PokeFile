@@ -37,8 +37,8 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
           <Ionicons name="chevron-back" size={20} color="#f4f4f5" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{set.name}</Text>
-        <TouchableOpacity style={styles.headerAction} onPress={() => navigate('Search')} hitSlop={10} accessibilityLabel="Search">
-          <Ionicons name="search" size={18} color="#f4f4f5" />
+        <TouchableOpacity style={styles.headerAction} onPress={() => navigate('SetFilters', { setId: set.id, tier, cardCount: cards.length })} hitSlop={10} accessibilityLabel="Filters">
+          <Ionicons name="options-outline" size={18} color="#f4f4f5" />
         </TouchableOpacity>
       </View>
 

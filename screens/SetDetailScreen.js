@@ -58,7 +58,7 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
             <Text style={styles.headerTitle}>Set Overview</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.headerButton} onPress={() => navigate('Search')} accessibilityLabel="Search"><Ionicons name="search" size={17} color="#f4f4f5" /></TouchableOpacity>
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigate('SetFilters', { setId: set.id, tier: tier.toLowerCase(), cardCount: requirements.length })} accessibilityLabel="Filters"><Ionicons name="options-outline" size={17} color="#f4f4f5" /></TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

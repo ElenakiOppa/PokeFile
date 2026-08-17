@@ -16,7 +16,7 @@ export default function RegistryHeader({ title, onBack, onMenu, onSearch, right,
       </View>
       {right || (
         <TouchableOpacity style={styles.icon} onPress={onSearch || onRightPress} disabled={!onSearch && !onRightPress} hitSlop={10}>
-          <Ionicons name={onSearch ? 'search' : (rightIcon || 'ellipsis-horizontal')} size={16} color={colors.text} />
+          <Ionicons name={onBack ? 'options-outline' : onSearch ? 'search' : (rightIcon || 'ellipsis-horizontal')} size={16} color={colors.text} />
         </TouchableOpacity>
       )}
     </View>

@@ -6,7 +6,7 @@ import BrandLogo from './BrandLogo';
 
 /**
  * Top-level pages use the drawer action. Nested/detail pages use back.
- * Search is always retained on the right.
+ * Top-level pages use search. Nested pages use the filter action.
  */
 export default function TopBar({
   variant = 'title',
@@ -32,8 +32,8 @@ export default function TopBar({
         <View style={{ flex: 1 }} />
       )}
 
-      <TouchableOpacity onPress={onSearchPress} hitSlop={12} style={styles.iconBtn} accessibilityLabel="Search">
-        <Ionicons name="search" size={17} color={colors.text} />
+      <TouchableOpacity onPress={onSearchPress} hitSlop={12} style={styles.iconBtn} accessibilityLabel={variant === 'back' ? 'Filters' : 'Search'}>
+        <Ionicons name={variant === 'back' ? 'options-outline' : 'search'} size={17} color={colors.text} />
       </TouchableOpacity>
     </View>
   );
