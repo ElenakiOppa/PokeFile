@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme";
 import HolographicCard from "./HolographicCard";
+import UserAvatar from "./UserAvatar";
 function MissingArtwork({ card }) {
   return (
     <View style={[s.card, s.missing]}>
@@ -29,11 +30,7 @@ export default function FlexBinderPresentation({
       onLayout={exportMode ? onExportLayout : undefined}
     >
       <View style={s.user}>
-        <View style={s.avatar}>
-          <Text style={s.avatarText}>
-            {(data?.collectorName || "PF").slice(0, 2).toUpperCase()}
-          </Text>
-        </View>
+        <UserAvatar size={30} name={data?.collectorName} />
         <Text style={s.userName}>
           {data?.collectorName || "Pokéfile Collector"}
         </Text>

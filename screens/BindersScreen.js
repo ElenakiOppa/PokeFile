@@ -15,6 +15,7 @@ import BinderBook from "../components/BinderBook";
 import FlexBinderBook from "../components/FlexBinderBook";
 import { getPrimaryFlexBinder } from "../lib/flexBinder";
 import { useAppContext } from "../AppContext";
+import UserAvatar from "../components/UserAvatar";
 const W = (Dimensions.get("window").width - 64) / 2;
 export default function BindersScreen({
   navigate,
@@ -59,16 +60,9 @@ export default function BindersScreen({
             <Text style={s.kicker}>PREMIUM REGISTRIES</Text>
           </View>
           <TouchableOpacity
-            style={s.avatar}
             onPress={() => navigate("Profile")}
           >
-            {userProfile?.avatarUri ? (
-              <View />
-            ) : (
-              <Text style={s.avatarText}>
-                {(userProfile?.displayName || "PF").slice(0, 2).toUpperCase()}
-              </Text>
-            )}
+            <UserAvatar size={42} profile={userProfile} />
           </TouchableOpacity>
         </View>
         <View style={s.summary}>

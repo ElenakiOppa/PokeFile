@@ -1,103 +1,37 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
+import { useAppContext } from '../AppContext';
+import UserAvatar from '../components/UserAvatar';
 
-const ITEMS = [
-  { key: 'Home', label: 'Home', hasArrow: true },
-  { key: 'Search', label: 'Search' },
-  { key: 'CollectionAll', label: 'Collection' },
-  { key: 'SeriesView', label: 'Sets' },
-  { key: 'Binders', label: 'Binders' },
-  { key: 'Wishlist', label: 'Wishlist' },
-  { key: 'Profile', label: 'Profile' },
+const GROUPS = [
+  { title: 'COLLECTION INDEX', items: [
+    ['Home','Home','home-outline'], ['CollectionAll','Collection','albums-outline'], ['SeriesView','Sets & Expansions','grid-outline'], ['Binders','Binders','book-outline'], ['Wishlist','Wishlist','heart-outline'],
+  ]},
+  { title: 'INTELLIGENCE', items: [
+    ['Search','Search Registry','search-outline'], ['Vault','Collector Vault','shield-checkmark-outline'], ['ValueHistory','Portfolio Analytics','analytics-outline'],
+  ]},
+  { title: 'ACCOUNT', items: [
+    ['Profile','Profile & Settings','person-outline'], ['About','About Pokéfile','information-circle-outline'],
+  ]},
 ];
 
 export default function MenuScreen({ navigate, goBack }) {
-  const [isDark, setIsDark] = useState(true);
-  const [active, setActive] = useState('Home');
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} hitSlop={12}>
-          <Text style={styles.close}>✕</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigate('Profile')} style={styles.avatar}>
-          <Text style={styles.avatarText}>PF</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.list}>
-        {ITEMS.map((item) => {
-          const isActive = active === item.key;
-          return (
-            <TouchableOpacity
-              key={item.key}
-              style={styles.itemRow}
-              onPress={() => {
-                setActive(item.key);
-                navigate(item.key);
-              }}
-            >
-              <Text style={[styles.itemText, isActive ? styles.itemTextActive : styles.itemTextInactive]}>
-                {item.label}
-              </Text>
-              {isActive && <Text style={styles.itemArrow}>→</Text>}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <View style={styles.footer}>
-        <View style={styles.themeToggle}>
-          <TouchableOpacity
-            style={[styles.themeBtn, isDark ? null : styles.themeBtnActive]}
-            onPress={() => setIsDark(false)}
-          >
-            <Text style={styles.themeIcon}>☀</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.themeBtn, isDark ? styles.themeBtnActive : null]}
-            onPress={() => setIsDark(true)}
-          >
-            <Text style={styles.themeIcon}>☾</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity hitSlop={12} onPress={() => navigate('Profile')}>
-          <Text style={styles.gear}>⚙</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const { userProfile, preferences, updatePreferences } = useAppContext();
+  const open = route => { goBack?.(); setTimeout(() => navigate(route), 0); };
+  const theme = preferences.theme || 'Dark';
+  return <View style={s.page}>
+    <View style={s.header}><View><Text style={s.kicker}>POKÉFILE REGISTRY</Text><Text style={s.title}>Index Menu</Text></View><TouchableOpacity style={s.close} onPress={goBack}><Ionicons name="close" size={20} color={colors.text} /></TouchableOpacity></View>
+    <TouchableOpacity style={s.profile} onPress={() => open('Profile')}><UserAvatar size={52} /><View style={s.profileCopy}><Text style={s.name}>{userProfile.displayName || 'Collector'}</Text><Text style={s.email} numberOfLines={1}>{userProfile.email || 'Pokéfile account'}</Text><Text style={s.profileAction}>VIEW ACCOUNT REGISTRY</Text></View><Ionicons name="chevron-forward" size={17} color={colors.textTertiary} /></TouchableOpacity>
+    <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>{GROUPS.map(group => <View key={group.title}><Text style={s.group}>{group.title}</Text><View style={s.groupCard}>{group.items.map(([route,label,icon],index) => <TouchableOpacity key={route} style={[s.row,index < group.items.length-1 && s.divider]} onPress={() => open(route)}><View style={s.rowLeft}><View style={s.icon}><Ionicons name={icon} size={17} color={colors.purple} /></View><Text style={s.rowText}>{label}</Text></View><Ionicons name="chevron-forward" size={15} color={colors.textTertiary} /></TouchableOpacity>)}</View></View>)}</ScrollView>
+    <View style={s.footer}><Text style={s.footerLabel}>APPEARANCE</Text><View style={s.theme}><ThemeButton icon="moon-outline" label="Dark" selected={theme === 'Dark'} onPress={() => updatePreferences({ theme:'Dark' })} /><ThemeButton icon="sunny-outline" label="Light" selected={theme === 'Light'} onPress={() => updatePreferences({ theme:'Light' })} /><ThemeButton icon="desktop-outline" label="System" selected={theme === 'System'} onPress={() => updatePreferences({ theme:'System' })} /></View></View>
+  </View>;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, paddingTop: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  close: { color: colors.text, fontSize: 20 },
-  avatar: {
-    width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.borderStrong,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  avatarText: { color: colors.text, fontSize: 11, fontWeight: '600' },
-  list: { marginTop: 48 },
-  itemRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14,
-  },
-  itemText: { fontSize: 34, fontWeight: '300' },
-  itemTextActive: { color: colors.text },
-  itemTextInactive: { color: 'rgba(255,255,255,0.35)' },
-  itemArrow: { color: colors.text, fontSize: 24 },
-  footer: {
-    position: 'absolute', bottom: 40, left: 24, right: 24,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-  },
-  themeToggle: {
-    flexDirection: 'row', backgroundColor: '#161616', borderRadius: 20, padding: 4,
-  },
-  themeBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  themeBtnActive: { backgroundColor: '#2a2a2a' },
-  themeIcon: { color: colors.text, fontSize: 14 },
-  gear: { color: colors.textSecondary, fontSize: 20 },
+function ThemeButton({icon,label,selected,onPress}) { return <TouchableOpacity style={[s.themeButton,selected&&s.themeOn]} onPress={onPress}><Ionicons name={icon} size={16} color={selected?colors.purple:colors.textTertiary} /><Text style={[s.themeText,selected&&s.themeTextOn]}>{label}</Text></TouchableOpacity>; }
+const s=StyleSheet.create({
+  page:{flex:1,backgroundColor:colors.bg,paddingHorizontal:20},header:{paddingTop:24,paddingBottom:18,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},kicker:{color:colors.purple,fontSize:9,fontWeight:'800',letterSpacing:1.3},title:{color:colors.text,fontSize:26,fontWeight:'800',marginTop:3},close:{width:40,height:40,borderRadius:12,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,alignItems:'center',justifyContent:'center'},
+  profile:{minHeight:82,borderRadius:18,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,padding:14,flexDirection:'row',alignItems:'center'},profileCopy:{flex:1,marginLeft:13},name:{color:colors.text,fontSize:15,fontWeight:'800'},email:{color:colors.textSecondary,fontSize:10,marginTop:2,maxWidth:210},profileAction:{color:colors.purple,fontSize:8,fontWeight:'800',letterSpacing:.7,marginTop:6},
+  scroll:{paddingBottom:138},group:{color:colors.textTertiary,fontSize:9,fontWeight:'800',letterSpacing:1.1,marginTop:20,marginBottom:8},groupCard:{borderRadius:16,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,overflow:'hidden'},row:{height:52,paddingHorizontal:13,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},divider:{borderBottomWidth:1,borderBottomColor:colors.border},rowLeft:{flexDirection:'row',alignItems:'center'},icon:{width:32,height:32,borderRadius:9,backgroundColor:colors.card,alignItems:'center',justifyContent:'center',marginRight:12},rowText:{color:colors.text,fontSize:13,fontWeight:'600'},
+  footer:{position:'absolute',left:20,right:20,bottom:16,backgroundColor:colors.bg,paddingTop:10},footerLabel:{color:colors.textTertiary,fontSize:8,fontWeight:'800',letterSpacing:1.1,marginBottom:7},theme:{height:48,borderRadius:14,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,padding:4,flexDirection:'row',gap:4},themeButton:{flex:1,borderRadius:10,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6},themeOn:{backgroundColor:colors.card,borderWidth:1,borderColor:colors.border},themeText:{color:colors.textTertiary,fontSize:10,fontWeight:'700'},themeTextOn:{color:colors.purple}
 });
