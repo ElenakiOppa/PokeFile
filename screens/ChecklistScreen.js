@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { getSetById } from '../data';
 import { getSetRequirements, isOwned } from '../lib/collectibles';
+import { getLiveSetValuations } from '../lib/liveSetValuation';
 
 export default function ChecklistScreen({ navigate, goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {} }) {
   const setId = params.setId || 'pitch-black';
@@ -13,6 +14,19 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
   const ownedById = useMemo(() => Object.fromEntries(cards.map((card) => [card.id, isOwned(collectionQuantities, card)])), [cards, collectionQuantities]);
   const ownedCount = cards.reduce((sum, card) => sum + (ownedById[card.id] ? 1 : 0), 0);
   const percent = cards.length ? (ownedCount / cards.length) * 100 : 0;
+  const [pricing, setPricing] = useState({ status: 'loading' });
+
+  useEffect(() => {
+    if (!set) return undefined;
+    let active = true;
+    setPricing({ status: 'loading' });
+    getLiveSetValuations(set)
+      .then((result) => { if (active) setPricing({ status: 'ready', ...result }); })
+      .catch((error) => { if (active) setPricing({ status: 'error', message: error.message }); });
+    return () => { active = false; };
+  }, [set]);
+
+  const tierPrices = pricing.valuations?.[tier]?.requirementPrices || {};
 
   const toggle = (card) => setCardQuantity(card.id, ownedById[card.id] ? 0 : 1);
 
@@ -42,7 +56,7 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
       <ScrollView style={styles.list} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
         {cards.map((card) => {
           const owned = ownedById[card.id];
-          const value = Number(card.value || card.price || 0);
+          const value = Number(tierPrices[String(card.collectibleKey || card.id)] || 0);
           return (
             <View key={card.id} style={[styles.row, owned && styles.rowOwned]}>
               <TouchableOpacity style={[styles.checkbox, owned && styles.checkboxOwned]} onPress={() => toggle(card)} accessibilityLabel={owned ? `Remove ${card.name} from collection` : `Add ${card.name} to collection`}>
@@ -56,11 +70,11 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.finish} numberOfLines={1}>{card.variant || card.finish || card.rarity || 'Standard'}</Text>
-                  {value > 0 ? <Text style={styles.value}>€{value.toFixed(2)}</Text> : null}
+                  {value > 0 ? <Text style={styles.value}>€{value.toFixed(2)}</Text> : pricing.status === 'loading' ? <Text style={styles.pricePending}>Updating…</Text> : null}
                 </View>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => navigate('CardDetail', { cardId: card.id })} hitSlop={10} accessibilityLabel={`View ${card.name}`}>
-                <Ionicons name="arrow-forward" size={16} color="#71717a" />
+                <Ionicons name="chevron-forward" size={16} color="#71717a" />
               </TouchableOpacity>
             </View>
           );
@@ -96,4 +110,5 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   finish: { maxWidth: '68%', color: '#a1a1aa', fontSize: 12 },
   value: { color: colors.purple, fontSize: 12 },
+  pricePending: { color: '#71717a', fontSize: 11 },
 });
