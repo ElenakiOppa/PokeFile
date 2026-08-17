@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,8 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { colors, type } from '../theme';
-import ProgressBar from '../components/ProgressBar';
-import TopBar from '../components/TopBar';
-import { CARD_LIBRARY, getSetById } from '../data';
-import { getSetRequirements, isOwned } from '../lib/collectibles';
+import { colors } from '../theme';
+import { CARD_LIBRARY } from '../data';
 import { calculateVaultPortfolio, formatMoney } from '../lib/valueEngine';
 import { useAppContext } from '../AppContext';
 
@@ -20,14 +17,6 @@ const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigate, binders = [], collectionQuantities = {}, vaultAssets = [], rawAcquisitions = {}, valueSnapshots = [] }) {
   const { userProfile, preferences } = useAppContext();
-  const [binderIndex, setBinderIndex] = useState(0);
-  const hasBinders = binders.length > 0;
-  const safeIndex = hasBinders ? binderIndex % binders.length : 0;
-  const binder = hasBinders ? binders[safeIndex] : null;
-  const binderSet = binder ? getSetById(binder.setId) : null;
-  const binderCards = binder ? (binder.kind === 'freeform' ? (binder.slots || []).map((slot) => slot?.card).filter(Boolean) : getSetRequirements(binderSet, binder.tier)) : [];
-  const binderOwned = binderCards.filter((card) => isOwned(collectionQuantities, card)).length;
-  const binderPercent = binderCards.length ? Math.round((binderOwned / binderCards.length) * 100) : 0;
   const collectionCount = Object.values(collectionQuantities).reduce((sum, quantity) => sum + Number(quantity || 0), 0);
   const portfolio = useMemo(() => calculateVaultPortfolio({
     ownership: collectionQuantities,
@@ -44,23 +33,8 @@ export default function HomeScreen({ navigate, binders = [], collectionQuantitie
     .sort((a, b) => Number(b.value || 0) - Number(a.value || 0))
     .slice(0, 3);
 
-  const goPrev = () => {
-    if (!hasBinders) return;
-    setBinderIndex((i) => (i === 0 ? binders.length - 1 : i - 1));
-  };
-
-  const goNext = () => {
-    if (!hasBinders) return;
-    setBinderIndex((i) => (i === binders.length - 1 ? 0 : i + 1));
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-      <TopBar
-        variant="brand"
-        onMenuPress={() => navigate('Menu')}
-        onAvatarPress={() => navigate('Profile')}
-      />
       <View style={styles.portfolioHeader}>
         <Text style={styles.overline}>PORTFOLIO OVERVIEW</Text>
         <Text style={styles.greeting}>{userProfile?.displayName || 'Your collection'}</Text>
@@ -78,7 +52,7 @@ export default function HomeScreen({ navigate, binders = [], collectionQuantitie
       </View>
 
       <View style={styles.highlightsHeader}>
-        <Text style={styles.sectionTitle}>Collection Highlights</Text>
+        <Text style={styles.sectionTitle}>Recent Acquisitions</Text>
         <TouchableOpacity onPress={() => navigate('CollectionAll')}><Text style={styles.viewAll}>View All</Text></TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.highlights}>
@@ -92,55 +66,6 @@ export default function HomeScreen({ navigate, binders = [], collectionQuantitie
         ))}
       </ScrollView>
 
-      <View style={styles.binderSection}>
-        {hasBinders ? (
-          <>
-            <Text style={type.label}>CURRENT BINDER</Text>
-
-            <View style={styles.binderTitleRow}>
-              <Text style={styles.binderTitle}>{binder.name}</Text>
-              <TouchableOpacity
-                style={styles.circleButtonLarge}
-                onPress={() => navigate('BinderDetail', { binderId: binder.id })}
-              >
-                <Text style={styles.arrowText}>→</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.binderSubtitle}>{binder.tier.toUpperCase()} · {binderOwned}/{binderCards.length}</Text>
-
-            <Text style={styles.percentText}>
-              <Text style={styles.percentBold}>{binderPercent}%</Text> complete
-            </Text>
-            <View style={{ marginTop: 10 }}>
-              <ProgressBar percent={binderPercent} />
-            </View>
-
-            <View style={styles.paginationRow}>
-              <TouchableOpacity onPress={goPrev} hitSlop={10}>
-                <Text style={styles.chevron}>‹</Text>
-              </TouchableOpacity>
-
-              <View style={styles.dotsRow}>
-                {binders.map((b, i) => (
-                  <TouchableOpacity key={b.id} onPress={() => setBinderIndex(i)}>
-                    <View style={[styles.dot, i === binderIndex ? styles.dotActive : styles.dotInactive]} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TouchableOpacity onPress={goNext} hitSlop={10}>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <View style={styles.emptyBinderState}>
-            <Text style={styles.emptyBinderTitle}>No binders yet</Text>
-            <Text style={styles.emptyBinderText}>Start a binder when you are ready to organize sets.</Text>
-          </View>
-        )}
-      </View>
     </ScrollView>
   );
 }

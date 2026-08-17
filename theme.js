@@ -13,7 +13,10 @@ const LIGHT = {
   orange: '#C94E20', red: '#B42318',
 };
 
-const BASE_ACCENT = '#8B5CF6';
+// Canonical accent sampled from the approved Figma file. Keeping this as the
+// single theme token lets existing screens inherit the redesign without
+// duplicating visual rules or touching their application logic.
+const BASE_ACCENT = '#D6B42C';
 let settings = { theme: 'Dark', accent: BASE_ACCENT, density: 'Comfortable' };
 
 const hexToRgba = (hex, alpha) => {

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
+  TextInput,
 } from "react-native";
 import { colors, type } from "../theme";
 import TopBar from "../components/TopBar";
@@ -14,8 +15,8 @@ import { CARD_LIBRARY } from "../data";
 import EmptyState from "../components/EmptyState";
 
 const { width } = Dimensions.get("window");
-const COLS = 3;
-const GAP = 10;
+const COLS = 2;
+const GAP = 12;
 const CARD_W = (width - 24 * 2 - GAP * (COLS - 1)) / COLS;
 const TABS = ["All", "Recent", "Favorites"];
 
@@ -25,9 +26,10 @@ export default function CollectionAllScreen({
   vaultAssets = [],
 }) {
   const [tab, setTab] = useState("All");
+  const [query, setQuery] = useState("");
   const cards = CARD_LIBRARY.filter(
     (card) => Number(collectionQuantities[card.id] || 0) > 0,
-  );
+  ).filter((card) => `${card.name} ${card.setName || ""} ${card.number || ""}`.toLowerCase().includes(query.trim().toLowerCase()));
   const gradedCount = vaultAssets.filter((asset) => asset.type === "graded").length;
   const sealedCount = vaultAssets.filter((asset) => asset.type === "sealed").length;
 
@@ -77,6 +79,21 @@ export default function CollectionAllScreen({
           </TouchableOpacity>
         ))}
       </View>
+      <View style={styles.searchRow}>
+        <View style={styles.searchField}>
+          <Text style={styles.searchGlyph}>⌕</Text>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search collection"
+            placeholderTextColor={colors.textTertiary}
+            style={styles.searchInput}
+          />
+        </View>
+        <TouchableOpacity style={styles.searchFilter} onPress={() => navigate("CollectionFilters")}>
+          <Text style={styles.searchFilterText}>≡</Text>
+        </TouchableOpacity>
+      </View>
       <TouchableOpacity
         style={styles.vaultEntry}
         onPress={() => navigate("Vault")}
@@ -125,6 +142,9 @@ export default function CollectionAllScreen({
                 style={[styles.image, { height: CARD_W * 1.4 }]}
                 resizeMode="contain"
               />
+              <Text style={styles.cardName} numberOfLines={1}>{card.name}</Text>
+              <Text style={styles.cardMeta} numberOfLines={1}>{card.setName || card.setId} · #{card.number}</Text>
+              <Text style={styles.cardValue}>€{Number(card.value || 0).toFixed(2)}</Text>
               <View style={styles.quantityBadge}>
                 <Text style={styles.quantityText}>
                   {collectionQuantities[card.id]}
@@ -172,6 +192,12 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.purple, borderColor: colors.purple },
   tabText: { color: colors.textSecondary, fontSize: 12, fontWeight: "600" },
   tabTextActive: { color: colors.text },
+  searchRow: { flexDirection: "row", gap: 9, paddingHorizontal: 24, marginTop: 18 },
+  searchField: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: "row", alignItems: "center", paddingHorizontal: 12 },
+  searchGlyph: { color: colors.textTertiary, fontSize: 17, marginRight: 8 },
+  searchInput: { flex: 1, color: colors.text, fontSize: 12, paddingVertical: 0 },
+  searchFilter: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
+  searchFilterText: { color: colors.purple, fontSize: 18, transform: [{ rotate: "90deg" }] },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -180,8 +206,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingBottom: 40,
   },
-  tile: { marginBottom: 10 },
+  tile: { marginBottom: 20 },
   image: { width: "100%", borderRadius: 8, backgroundColor: colors.card },
+  cardName: { color: colors.text, fontSize: 12, fontWeight: "700", marginTop: 8 },
+  cardMeta: { color: colors.textTertiary, fontSize: 8, marginTop: 3 },
+  cardValue: { color: colors.purple, fontSize: 11, fontWeight: "700", marginTop: 5 },
   quantityBadge: {
     position: "absolute",
     top: 6,

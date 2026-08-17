@@ -2,6 +2,7 @@ node_modules
 .env
 .expo-export-check/
 .release-a-check/
+.figma-redesign-check/
 dist/
 dist-*/
 supabase/.temp/
