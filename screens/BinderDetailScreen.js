@@ -9,7 +9,7 @@ import { getGeneratedBinderSlots, isOwned, paginateBinderSlots } from '../lib/co
 const { width } = Dimensions.get('window');
 const GAP = 10;
 
-export default function BinderDetailScreen({ navigate, updateCurrentParams = () => {}, params = {}, collectionQuantities = {}, setCardQuantity = () => {}, setCardsCollected = () => {}, binders = [], removeCardFromBinder = () => {} }) {
+export default function BinderDetailScreen({ navigate, goBack, updateCurrentParams = () => {}, params = {}, collectionQuantities = {}, setCardQuantity = () => {}, setCardsCollected = () => {}, binders = [], removeCardFromBinder = () => {} }) {
   const [currentPage, setCurrentPage] = useState(() => Math.max(0, Number(params.page) || 0));
   const [showMissing, setShowMissing] = useState(false);
   const binderId = params.binderId || params.setId || 'me5';
@@ -69,7 +69,7 @@ export default function BinderDetailScreen({ navigate, updateCurrentParams = () 
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <TopBar variant="title" onMenuPress={() => navigate('Menu')} onAvatarPress={() => navigate('Profile')} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
 
       <View style={styles.titleRow}>
         <Text style={styles.title}>{String(savedBinder?.name || binder.name).toUpperCase()}</Text>

@@ -9,6 +9,7 @@ import { calculateVaultPortfolio } from "../lib/valueEngine";
 import { calculateVaultInsights } from "../lib/vaultInsights";
 import { useAppContext } from "../AppContext";
 export default function InsightsScreen({
+  navigate,
   goBack,
   collectionQuantities = {},
   binders = [],
@@ -51,7 +52,7 @@ export default function InsightsScreen({
   ];
   return (
     <ScrollView style={s.container}>
-      <TopBar variant="back" onBackPress={goBack} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       <View style={s.content}>
         <Text style={s.label}>COLLECTION INSIGHTS</Text>
         <Text style={s.title}>

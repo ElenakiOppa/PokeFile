@@ -18,7 +18,7 @@ export default function MissingListScreen({ goBack, navigate, params = {}, binde
 
   return (
     <View style={styles.container}>
-      <TopBar variant="back" onBackPress={goBack} onAvatarPress={() => navigate('Profile')} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       <View style={styles.header}>
         <Text style={styles.eyebrow}>SMART MISSING LIST</Text>
         <Text style={styles.title}>{set?.name || 'Binder'}</Text>

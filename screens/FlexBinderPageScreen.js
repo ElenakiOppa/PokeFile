@@ -96,7 +96,7 @@ export default function FlexBinderPageScreen({ goBack, navigate, params = {}, bi
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <TopBar variant="back" onBackPress={goBack} />
+        <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
         <FlexBinderPresentation data={data} onCardPress={(card) => navigate('CardDetail', { cardId: card.collectibleKey })} />
         <View style={styles.actions}><TouchableOpacity style={styles.secondary} onPress={() => navigate('FlexBinderEditor', { binderId: binder.id })}><Text style={styles.secondaryText}>Edit</Text></TouchableOpacity><TouchableOpacity style={[styles.primary, exporting && styles.primaryDisabled]} onPress={exportImage} disabled={exporting}><Text style={styles.primaryText}>{exporting ? 'Preparing showcase…' : 'Export 1080 × 1920'}</Text></TouchableOpacity></View>
       </ScrollView>

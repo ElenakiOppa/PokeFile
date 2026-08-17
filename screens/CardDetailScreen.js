@@ -14,7 +14,7 @@ export default function CardDetailScreen({ navigate, goBack, params = {}, collec
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TopBar variant="back" onBackPress={goBack} onAvatarPress={() => navigate('Profile')} />
+        <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       </View>
 
       <View style={styles.actionsRow}>

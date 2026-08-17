@@ -118,7 +118,7 @@ export default function AddGradedAssetScreen({
   };
   return (
     <ScrollView style={s.container}>
-      <TopBar variant="back" onBackPress={goBack} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       <View style={s.content}>
         <Text style={s.eyebrow}>
           {current ? "EDIT GRADED ASSET" : "ADD GRADED COPY"}

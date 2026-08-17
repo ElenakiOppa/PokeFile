@@ -27,7 +27,7 @@ export default function FlexBinderEditorScreen({ goBack, navigate, params = {}, 
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <TopBar variant="back" onBackPress={goBack} />
+        <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
         <View style={styles.header}><Text style={styles.eyebrow}>FLEX BINDER</Text><Text style={styles.title}>Curate your nine.</Text></View>
         <TextInput value={draft.title} onChangeText={(title) => setDraft((v) => ({ ...v, title }))} placeholder="Showcase title" placeholderTextColor={colors.textTertiary} style={styles.input} />
         <TextInput value={draft.description} onChangeText={(description) => setDraft((v) => ({ ...v, description }))} placeholder="Short description (optional)" placeholderTextColor={colors.textTertiary} style={[styles.input, styles.description]} multiline maxLength={140} />

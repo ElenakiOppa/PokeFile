@@ -44,7 +44,7 @@ export default function VaultAssetDetailScreen({
   if (!asset)
     return (
       <View style={s.container}>
-        <TopBar variant="back" onBackPress={goBack} />
+        <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
         <Text style={s.missing}>This Vault asset is no longer available.</Text>
       </View>
     );
@@ -76,7 +76,7 @@ export default function VaultAssetDetailScreen({
     );
   return (
     <View style={s.container}>
-      <TopBar variant="back" onBackPress={goBack} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       <View style={[s.content, compact && s.contentCompact]}>
         {imageSource ? (
           <Image

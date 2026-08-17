@@ -33,7 +33,7 @@ export default function BinderSettingsScreen({ navigate, goBack, params = {}, bi
 
   return (
     <View style={styles.screen}>
-      <TopBar variant="back" onBackPress={goBack} onAvatarPress={() => navigate('Profile')} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.coverPanel}>
           <BinderCover set={set} styleId={binder?.coverStyle || 'classic'} name={name} compact />

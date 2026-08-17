@@ -71,7 +71,7 @@ function Chart({ points }) {
     </View>
   );
 }
-export default function ValueHistoryScreen({ goBack, valueSnapshots = [] }) {
+export default function ValueHistoryScreen({ navigate, goBack, valueSnapshots = [] }) {
   const { preferences } = useAppContext();
   const [range, setRange] = useState("ALL");
   const points = useMemo(() => {
@@ -88,7 +88,7 @@ export default function ValueHistoryScreen({ goBack, valueSnapshots = [] }) {
     change = last - first;
   return (
     <ScrollView style={s.container}>
-      <TopBar variant="back" onBackPress={goBack} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       <View style={s.content}>
         <Text style={s.label}>VALUE HISTORY</Text>
         <Text style={s.value}>

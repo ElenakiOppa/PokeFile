@@ -21,6 +21,7 @@ const verb = {
   "wishlist-target-changed": "Wishlist target changed",
 };
 export default function CollectionHistoryScreen({
+  navigate,
   goBack,
   historyEvents = [],
 }) {
@@ -38,7 +39,7 @@ export default function CollectionHistoryScreen({
   );
   return (
     <ScrollView style={s.container}>
-      <TopBar variant="back" onBackPress={goBack} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       <View style={s.content}>
         <Text style={s.label}>COLLECTION HISTORY</Text>
         <Text style={s.title}>The story of your collection.</Text>

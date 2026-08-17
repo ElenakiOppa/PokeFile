@@ -53,7 +53,7 @@ export default function CoverDesignerScreen({ goBack, params = {}, createBinder 
 
   return (
     <View style={styles.container}>
-      <TopBar variant="back" onBackPress={goBack} onAvatarPress={() => {}} />
+      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.headingRow}>
           <View><Text style={styles.title}>Design your cover</Text><Text style={styles.subtitle}>Pick a style</Text></View>
