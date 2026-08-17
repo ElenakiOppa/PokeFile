@@ -29,8 +29,11 @@ export default function CollectionAllScreen({
 }) {
   const [query, setQuery] = useState("");
   const quantityFor = (card) => Number(collectionQuantities[card.id] || 0);
+  const selectedSets = Array.isArray(collectionFilters.sets)
+    ? collectionFilters.sets
+    : collectionFilters.set && collectionFilters.set !== "All Sets" ? [collectionFilters.set] : [];
   const activeFilterCount = [
-    collectionFilters.set && collectionFilters.set !== "All Sets",
+    selectedSets.length > 0,
     collectionFilters.rarity && collectionFilters.rarity !== "All",
     collectionFilters.condition && collectionFilters.condition !== "All",
     collectionFilters.ownership && collectionFilters.ownership !== "Owned",
@@ -40,7 +43,7 @@ export default function CollectionAllScreen({
     const ownership = collectionFilters.ownership || "Owned";
     if (ownership === "Owned" && quantity <= 0) return false;
     if (ownership === "Missing" && quantity > 0) return false;
-    if (collectionFilters.set && collectionFilters.set !== "All Sets" && card.setName !== collectionFilters.set) return false;
+    if (selectedSets.length && !selectedSets.includes(card.setName)) return false;
     if (collectionFilters.rarity && collectionFilters.rarity !== "All" && card.rarity !== collectionFilters.rarity) return false;
     if (collectionFilters.condition && collectionFilters.condition !== "All") {
       if (quantity <= 0 || (rawAcquisitions[card.id]?.condition || "Raw") !== collectionFilters.condition) return false;
@@ -86,7 +89,7 @@ export default function CollectionAllScreen({
             onButtonPress={() => {
               if (ownedCount > 0 || activeFilterCount > 0 || query) {
                 setQuery("");
-                setCollectionFilters({ set: "All Sets", rarity: "All", condition: "All", ownership: "Owned" });
+                setCollectionFilters({ sets: [], rarity: "All", condition: "All", ownership: "Owned" });
               } else navigate("AllSets");
             }}
           />

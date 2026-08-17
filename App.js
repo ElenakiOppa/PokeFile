@@ -68,7 +68,7 @@ const DEFAULT_PREFERENCES = {
   },
 };
 const DEFAULT_COLLECTION_FILTERS = {
-  set: "All Sets",
+  sets: [],
   rarity: "All",
   condition: "All",
   ownership: "Owned",
