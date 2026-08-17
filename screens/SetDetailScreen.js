@@ -1,146 +1,113 @@
-
 import React, { useMemo, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
-import { getSetById, rarityRank } from '../data';
+import { getSetById } from '../data';
 import { getSetRequirements, isOwned } from '../lib/collectibles';
 
-const { width } = Dimensions.get('window');
-const COLS = 3;
-const GAP = 10;
-const CARD_W = (width - 24 * 2 - GAP * (COLS - 1)) / COLS;
-const TABS = ['Complete', 'Master', 'Grandmaster'];
+const TIERS = ['Complete', 'Master', 'Grandmaster'];
 
-export default function SetDetailScreen({ navigate, goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {} }) {
-  const [tab, setTab] = useState('Master');
-  const [filters, setFilters] = useState({ show: 'All Cards', rarity: 'All', finish: 'All', sortBy: 'Number' });
+export default function SetDetailScreen({ navigate, goBack, params = {}, collectionQuantities = {}, vaultAssets = [] }) {
   const setId = params.setId || 'pitch-black';
   const set = useMemo(() => getSetById(setId), [setId]);
-  const availableTabs = TABS.filter((item) => item !== 'Grandmaster' || set.grandmasterAvailable);
+  const availableTiers = TIERS.filter((item) => item !== 'Grandmaster' || set?.grandmasterAvailable);
+  const requestedTier = String(params.tier || 'master').toLowerCase();
+  const [tier, setTier] = useState(availableTiers.find((item) => item.toLowerCase() === requestedTier) || 'Master');
+  const requirements = useMemo(() => set ? getSetRequirements(set, tier.toLowerCase()) : [], [set, tier]);
+  const owned = requirements.reduce((sum, card) => sum + (isOwned(collectionQuantities, card) ? 1 : 0), 0);
+  const percent = requirements.length ? (owned / requirements.length) * 100 : 0;
+  const value = requirements.reduce((sum, card) => sum + Number(card.value || card.price || 0), 0);
+  const graded = vaultAssets.filter((asset) => asset.type === 'graded' && (asset.setId === set?.id || asset.setName === set?.name)).length;
+  const released = set?.releaseDate ? new Date(set.releaseDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Release date unavailable';
 
-  const tierCards = useMemo(() => {
-    if (!set) return [];
-    return getSetRequirements(set, tab.toLowerCase());
-  }, [set, tab]);
-
-  const visibleCards = useMemo(() => {
-    const cards = tierCards.filter((card) => {
-      const owned = isOwned(collectionQuantities, card);
-      if (filters.show === 'Owned' && !owned) return false;
-      if (filters.show === 'Missing' && owned) return false;
-      if (filters.rarity !== 'All' && String(card.rarity) !== filters.rarity) return false;
-      if (filters.finish !== 'All' && !String(card.variant || '').toLowerCase().includes(filters.finish.toLowerCase())) return false;
-      return true;
-    });
-    if (filters.sortBy === 'Name') return cards.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-    if (filters.sortBy === 'Rarity') return cards.sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(a.sourceOrder || 0) - Number(b.sourceOrder || 0));
-    if (filters.sortBy === 'Price: High to Low') return cards.sort((a, b) => Number(b.value || 0) - Number(a.value || 0));
-    if (filters.sortBy === 'Price: Low to High') return cards.sort((a, b) => Number(a.value || 0) - Number(b.value || 0));
-    return cards;
-  }, [tierCards, filters, collectionQuantities]);
-
-  const totalOwnedCount = tierCards.reduce((total, card) => total + (isOwned(collectionQuantities, card) ? 1 : 0), 0);
-  const completionPercent = tierCards.length ? Math.round((totalOwnedCount / tierCards.length) * 100) : 0;
+  if (!set) return <View style={styles.screen}><Text style={styles.missing}>Set unavailable</Text></View>;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={goBack} hitSlop={12}>
-          <Text style={styles.back}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>{set.name.toUpperCase()}</Text>
-      </View>
-
-      <View style={styles.progressRow}>
-        <Text style={styles.percentText}>
-          <Text style={styles.percentBold}>{completionPercent}%</Text> complete
-        </Text>
-        <Text style={styles.countText}>{totalOwnedCount} / {tierCards.length}</Text>
-      </View>
-
-      <View style={styles.tabs}>
-        {availableTabs.map((item) => (
-          <TouchableOpacity
-            key={item}
-            style={[styles.tab, tab === item && styles.tabActive]}
-            onPress={() => setTab(item)}
-          >
-            <Text style={[styles.tabText, tab === item && styles.tabTextActive]}>{item.toUpperCase()}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.toolsRow}>
-        <TouchableOpacity style={styles.toolButton} onPress={() => navigate('SetCardGrid', { setId: set.id, tier: tab.toLowerCase() })}><Text style={styles.toolText}>Grid</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.toolButton} onPress={() => navigate('Checklist', { setId: set.id, tier: tab.toLowerCase() })}><Text style={styles.toolText}>Checklist</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.toolButton} onPress={() => navigate('SetFilters', { setId: set.id, tier: tab.toLowerCase(), filters, onApply: setFilters })}><Text style={styles.toolText}>Filters</Text></TouchableOpacity>
-      </View>
-
-      <View style={styles.grid}>
-        {visibleCards.map((card) => (
-          <View key={card.id} style={[styles.cardTile, { width: CARD_W }]}>
-            <TouchableOpacity onPress={() => navigate('CardDetail', { cardId: card.id })} activeOpacity={0.8}>
-              <Image
-                source={{ uri: card.image }}
-                style={[styles.cardImage, { height: CARD_W * 1.4 }]}
-                resizeMode="contain"
-              />
-              <Text style={styles.cardName} numberOfLines={1}>{card.name}</Text>
-            </TouchableOpacity>
-            <Text style={styles.cardNumber}>{card.number}</Text>
-            <View style={styles.cardMetaRow}>
-              <View style={styles.cardMetaText}>
-                <Text style={styles.cardVariant} numberOfLines={1}>{card.variant}</Text>
-                <Text style={styles.cardValue}>€{Number(card.value || 0).toFixed(2)}</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.collectButton, collectionQuantities[card.id] > 0 && styles.collectButtonActive]}
-                onPress={() => setCardQuantity(card.id, collectionQuantities[card.id] > 0 ? 0 : 1)}
-                accessibilityRole="button"
-                accessibilityLabel={`${collectionQuantities[card.id] > 0 ? 'Remove' : 'Add'} ${card.name} ${card.variant} ${collectionQuantities[card.id] > 0 ? 'from' : 'to'} collection`}
-              >
-                <Text style={styles.collectButtonText}>{collectionQuantities[card.id] > 0 ? '✓ 1' : '+ Collect'}</Text>
-              </TouchableOpacity>
-            </View>
+    <View style={styles.screen}>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity style={styles.headerButton} onPress={goBack} accessibilityLabel="Go back"><Ionicons name="chevron-back" size={18} color="#f4f4f5" /></TouchableOpacity>
+          <View style={styles.headerCopy}>
+            <Text style={styles.eyebrow} numberOfLines={1}>{String(set.series || set.language || 'POKÉMON TCG').toUpperCase()}</Text>
+            <Text style={styles.headerTitle}>Set Overview</Text>
           </View>
-        ))}
+        </View>
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigate('Search')} accessibilityLabel="Search"><Ionicons name="search" size={17} color="#f4f4f5" /></TouchableOpacity>
       </View>
-    </ScrollView>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.hero}>
+          <View style={styles.logoBox}><Image source={{ uri: set.logo }} style={styles.logo} resizeMode="contain" /></View>
+          <Text style={styles.name} numberOfLines={2}>{set.name}</Text>
+          <Text style={styles.release}>Released {released}{set.code ? ` • ${set.code}` : ''}</Text>
+        </View>
+
+        <View style={styles.tiers}>
+          {availableTiers.map((item) => (
+            <TouchableOpacity key={item} style={[styles.tier, tier === item && styles.tierActive]} onPress={() => setTier(item)}>
+              <Text style={[styles.tierText, tier === item && styles.tierTextActive]}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.progressCard}>
+          <View style={styles.progressHeader}><Text style={styles.progressLabel}>COMPLETION INDEX</Text><Text style={styles.progressValue}>{percent.toFixed(1)}% Completed</Text></View>
+          <View style={styles.track}><View style={[styles.fill, { width: `${Math.min(100, percent)}%` }]} /></View>
+          <View style={styles.counts}><Text style={styles.countText}>{owned} / {requirements.length} Cards Owned</Text><Text style={styles.countText}>{Math.max(0, requirements.length - owned)} Needed</Text></View>
+        </View>
+
+        <View style={styles.stats}>
+          <Stat label="EST. SET VALUE" value={`€${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+          <Stat label="GRADED GEMS" value={`${graded} Cards`} />
+        </View>
+
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.primary} onPress={() => navigate('SetCardGrid', { setId: set.id, tier: tier.toLowerCase() })}><Text style={styles.primaryText}>View Binder Card Grid</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.secondary} onPress={() => navigate('Checklist', { setId: set.id, tier: tier.toLowerCase() })}><Text style={styles.secondaryText}>View Set Checklist</Text></TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
+const Stat = ({ label, value }) => <View style={styles.stat}><Text style={styles.statLabel}>{label}</Text><Text style={styles.statValue} numberOfLines={1}>{value}</Text></View>;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingTop: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, marginBottom: 20 },
-  back: { color: colors.text, fontSize: 28, fontWeight: '300', marginRight: 16 },
-  title: { color: colors.text, fontSize: 24, fontWeight: '600', flexShrink: 1 },
-  progressRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24,
-  },
-  percentText: { color: colors.textSecondary, fontSize: 14 },
-  percentBold: { color: colors.text, fontWeight: '700' },
-  countText: { color: colors.textSecondary, fontSize: 14 },
-  tabs: { flexDirection: 'row', paddingHorizontal: 24, marginTop: 18, marginBottom: 18 },
-  tab: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 16, marginRight: 8, borderWidth: 1, borderColor: colors.border },
-  tabActive: { backgroundColor: colors.purple, borderColor: colors.purple },
-  tabText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
-  tabTextActive: { color: colors.text },
-  toolsRow: { flexDirection: 'row', paddingHorizontal: 24, marginBottom: 18, gap: 8 },
-  toolButton: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  toolText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
-  grid: {
-    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between',
-    paddingHorizontal: 24, paddingBottom: 40,
-  },
-  cardTile: { marginBottom: 16 },
-  cardImage: { width: '100%', borderRadius: 8, backgroundColor: colors.card },
-  cardName: { color: colors.text, fontSize: 11, fontWeight: '500', marginTop: 6 },
-  cardNumber: { color: colors.textTertiary, fontSize: 10, marginTop: 1 },
-  cardVariant: { color: colors.textSecondary, fontSize: 9, marginTop: 2 },
-  cardValue: { color: colors.purple, fontSize: 10, fontWeight: '600', marginTop: 3 },
-  cardMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginTop: 2 },
-  cardMetaText: { flex: 1, minWidth: 0 },
-  collectButton: { backgroundColor: colors.purpleSoft, borderWidth: 1, borderColor: colors.purple, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 5 },
-  collectButtonActive: { backgroundColor: colors.purple },
-  collectButtonText: { color: colors.text, fontSize: 8, fontWeight: '700' },
+  screen: { flex: 1, backgroundColor: '#080808' },
+  header: { height: 63, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerButton: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', alignItems: 'center', justifyContent: 'center' },
+  headerCopy: { flex: 1 },
+  eyebrow: { color: colors.purple, fontSize: 11, fontWeight: '600' },
+  headerTitle: { color: '#f4f4f5', fontSize: 18, lineHeight: 23, fontWeight: '700', marginTop: 2 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 16, paddingBottom: 28 },
+  hero: { alignItems: 'center', gap: 10, paddingVertical: 18 },
+  logoBox: { width: 80, height: 80, borderRadius: 24, borderWidth: 2, borderColor: 'rgba(212,175,55,0.25)', backgroundColor: 'rgba(212,175,55,0.12)', alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 70, height: 70, borderRadius: 20 },
+  name: { color: '#f4f4f5', fontSize: 22, fontWeight: '700', textAlign: 'center', marginTop: 4 },
+  release: { color: '#a1a1aa', fontSize: 13, textAlign: 'center' },
+  tiers: { flexDirection: 'row', gap: 7, marginBottom: 12 },
+  tier: { flex: 1, minHeight: 34, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  tierActive: { borderColor: colors.purple, backgroundColor: 'rgba(212,175,55,0.12)' },
+  tierText: { color: '#a1a1aa', fontSize: 10, fontWeight: '600' },
+  tierTextActive: { color: colors.purple },
+  progressCard: { borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', padding: 18, gap: 14 },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  progressLabel: { color: '#a1a1aa', fontSize: 13, fontWeight: '600' },
+  progressValue: { color: colors.purple, fontSize: 13, fontWeight: '700' },
+  track: { height: 8, borderRadius: 4, backgroundColor: 'rgba(212,175,55,0.12)', overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 4, backgroundColor: colors.purple },
+  counts: { flexDirection: 'row', justifyContent: 'space-between' },
+  countText: { color: '#a1a1aa', fontSize: 12 },
+  stats: { flexDirection: 'row', gap: 12, marginTop: 20 },
+  stat: { flex: 1, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', padding: 14, gap: 6 },
+  statLabel: { color: '#a1a1aa', fontSize: 11 },
+  statValue: { color: colors.purple, fontSize: 16, fontWeight: '700' },
+  actions: { gap: 10, marginTop: 20 },
+  primary: { height: 46, borderRadius: 12, backgroundColor: colors.purple, alignItems: 'center', justifyContent: 'center' },
+  primaryText: { color: '#080808', fontSize: 14, fontWeight: '700' },
+  secondary: { height: 46, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
+  secondaryText: { color: '#f4f4f5', fontSize: 14, fontWeight: '600' },
+  missing: { color: '#f4f4f5', margin: 24 },
 });
