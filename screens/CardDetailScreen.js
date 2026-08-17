@@ -1,148 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { colors } from '../theme';
-import TopBar from '../components/TopBar';
-import { getCardById, CARD_DETAIL } from '../data';
-
-export default function CardDetailScreen({ navigate, goBack, params = {}, collectionQuantities = {}, setCardQuantity = () => {} }) {
-  const cardId = params.cardId || CARD_DETAIL.id;
-  const card = getCardById(cardId, CARD_DETAIL);
-  const isCollected = Number(collectionQuantities[card.id] || 0) > 0;
-  const [liked, setLiked] = useState(Boolean(card.collected));
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
-      </View>
-
-      <View style={styles.actionsRow}>
-        <View />
-        <TouchableOpacity onPress={() => setMenuOpen((v) => !v)}>
-          <Text style={styles.iconText}>⋮</Text>
-        </TouchableOpacity>
-      </View>
-
-      {menuOpen && (
-        <View style={styles.menuCard}>
-          {[
-            ['View All Variants', () => navigate('Variants', { cardId: card.id })],
-            [isCollected ? 'Remove from Collection' : 'Add to Collection', () => isCollected ? setCardQuantity(card.id, 0) : navigate('AddToCollection', { cardId: card.id })],
-            ['Edit Owned Card', () => navigate('EditOwnedCard', { cardId: card.id })],
-            ['Move/Add to Binder', () => navigate('ChooseBinder', { cardId: card.id })],
-            ['Zoom Card', () => navigate('CardZoom', { cardId: card.id })],
-          ].map(([label, action]) => (
-            <TouchableOpacity key={label} style={styles.menuItem} onPress={action}>
-              <Text style={styles.menuItemText}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.imageWrap}>
-        <TouchableOpacity onPress={() => navigate('CardZoom', { cardId: card.id })}>
-          <Image
-            source={{ uri: card.image }}
-            style={styles.image}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.heartBtn} onPress={() => setLiked((v) => !v)}>
-          <Text style={[styles.heartIcon, liked && { color: colors.purple }]}>{liked ? '♥' : '♡'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.infoBlock}>
-        <Text style={styles.name}>{card.name}</Text>
-        <Text style={styles.number}>#{card.number || card.id}</Text>
-        <View style={styles.metaRow}>
-          <Text style={styles.rarity}>{card.rarity || 'Ultra Rare'} · {card.number || '003/120'}</Text>
-          {isCollected ? (
-            <TouchableOpacity onPress={() => setCardQuantity(card.id, 0)} accessibilityLabel={`Remove ${card.name} from collection`}>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>In Collection</Text>
-              </View>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={() => navigate('AddToCollection', { cardId: card.id })}>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Add to Collection</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.detailsRow}>
-          <View style={styles.detailCol}>
-            <Text style={styles.detailLabel}>SET</Text>
-            <Text style={styles.detailValue}>{card.setName || card.setId || 'Set'}</Text>
-            <Text style={styles.detailSub}>{card.language || 'English'}</Text>
-          </View>
-          <View style={styles.detailCol}>
-            <Text style={styles.detailLabel}>VALUE</Text>
-            <View style={styles.statusRow}>
-              <Text style={styles.detailValue}>€{Number(card.value || 0).toFixed(2)}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => navigate('ChooseBinder', { cardId: card.id })}>
-            <Text style={styles.actionText}>Choose Binder</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => isCollected ? setCardQuantity(card.id, 0) : navigate('AddToCollection', { cardId: card.id })}>
-            <Text style={styles.actionText}>{isCollected ? 'Remove from Collection' : 'Add to Collection'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
-  );
+import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme'; import RegistryHeader from '../components/RegistryHeader';
+import { getCardById, getSetById, CARD_DETAIL } from '../data'; import { getLiveSetValuations } from '../lib/liveSetValuation';
+export default function CardDetailScreen({ navigate, goBack, params={}, collectionQuantities={}, addRequirementsToWishlist=()=>{} }) {
+ const card=getCardById(params.cardId||CARD_DETAIL.id,CARD_DETAIL); const set=getSetById(card.setId,null); const owned=Number(collectionQuantities[card.id]||0)>0; const [price,setPrice]=useState(null);
+ useEffect(()=>{let active=true;if(set)getLiveSetValuations(set).then((v)=>{if(!active)return;const maps=Object.values(v?.valuations||{}).map(t=>t.requirementPrices||{});const hit=maps.map(m=>m[card.id]).find(x=>Number.isFinite(Number(x)));setPrice(hit==null?null:Number(hit));}).catch(()=>setPrice(null));return()=>{active=false};},[card.id,set?.id]);
+ return <View style={styles.page}><RegistryHeader title="Card Details" onBack={goBack} onSearch={()=>navigate('Search')} /><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+  <TouchableOpacity style={styles.artWrap} onPress={()=>navigate('CardZoom',{cardId:card.id})}><Image source={{uri:card.image}} style={styles.art} resizeMode="contain" /></TouchableOpacity>
+  <Text style={styles.kicker}>{String(set?.name||card.setName||'SET').toUpperCase()} · #{card.number||card.localId||'—'}</Text><Text style={styles.name}>{card.name}</Text>
+  <View style={styles.chips}><Tag text={card.rarity||'Unknown rarity'} /><Tag text={card.variant||card.finish||'Standard'} /></View>
+  <View style={styles.metrics}><Metric label="MARKET PRICE" value={price==null?'Unavailable':`€${price.toFixed(2)}`} sub={price==null?'Provider price unavailable':'Live RapidAPI market'} /><Metric label="OWNED" value={owned?`${collectionQuantities[card.id]} cop${collectionQuantities[card.id]===1?'y':'ies'}`:'Not owned'} sub={owned?'In your registry':'Ready to acquire'} /></View>
+  <View style={styles.notes}><Text style={styles.notesTitle}>Collector Notes</Text><Text style={styles.notesText}>{card.description||'Verified collectible printing. Add acquisition details after logging this card.'}</Text></View>
+  <TouchableOpacity style={styles.link} onPress={()=>navigate('Variants',{cardId:card.id})}><Text style={styles.linkText}>View all printings</Text><Ionicons name="chevron-forward" color={colors.purple} size={14}/></TouchableOpacity>
+ </ScrollView><View style={styles.actions}><TouchableOpacity style={styles.primary} onPress={()=>navigate(owned?'EditOwnedCard':'AddToCollection',{cardId:card.id})}><Text style={styles.primaryText}>{owned?'Edit Owned Card':'Add to Collection'}</Text></TouchableOpacity><TouchableOpacity style={styles.secondary} onPress={()=>addRequirementsToWishlist([card])}><Text style={styles.secondaryText}>Save to Wishlist</Text></TouchableOpacity></View></View>;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  header: { paddingBottom: 4 },
-  actionsRow: {
-    flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 24, marginTop: 8,
-  },
-  iconText: { color: colors.text, fontSize: 20 },
-  menuCard: {
-    position: 'absolute', right: 24, top: 88, backgroundColor: colors.card, width: 220,
-    borderRadius: 12, paddingVertical: 8, zIndex: 10, borderWidth: 1, borderColor: colors.border,
-  },
-  menuItem: { paddingVertical: 10, paddingHorizontal: 14 },
-  menuItemText: { color: colors.text, fontSize: 13 },
-  imageWrap: { marginTop: 6, marginHorizontal: 24, padding: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  image: { width: '100%', height: 315, borderRadius: 12, backgroundColor: colors.card },
-  heartBtn: {
-    position: 'absolute', top: 12, right: 36, width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center',
-  },
-  heartIcon: { color: colors.text, fontSize: 18 },
-  infoBlock: { paddingHorizontal: 24, marginTop: 18, paddingBottom: 40 },
-  name: { color: colors.text, fontSize: 24, fontWeight: '700' },
-  number: { color: colors.purple, fontSize: 11, fontWeight: '700', marginTop: 4 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, justifyContent: 'space-between' },
-  rarity: { color: colors.textSecondary, fontSize: 13 },
-  badge: {
-    backgroundColor: colors.purpleSoft, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
-    borderWidth: 1, borderColor: colors.purple,
-  },
-  badgeText: { color: colors.purple, fontSize: 11, fontWeight: '600' },
-  detailsRow: {
-    flexDirection: 'row', marginTop: 24, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 20,
-  },
-  detailCol: { flex: 1 },
-  detailLabel: { color: colors.textTertiary, fontSize: 10, fontWeight: '600', letterSpacing: 1 },
-  detailValue: { color: colors.text, fontSize: 15, fontWeight: '500', marginTop: 6 },
-  detailSub: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
-  statusRow: { flexDirection: 'row', alignItems: 'center' },
-  checkmark: {
-    color: colors.purple, fontSize: 12, marginLeft: 8, borderWidth: 1, borderColor: colors.purple,
-    width: 18, height: 18, borderRadius: 9, textAlign: 'center', lineHeight: 17,
-  },
-  actionRow: { flexDirection: 'row', marginTop: 20, gap: 10 },
-  actionBtn: { flex: 1, borderWidth: 1, borderColor: colors.purple, backgroundColor: colors.purpleSoft, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  actionText: { color: colors.text, fontSize: 12, fontWeight: '600' },
-});
+function Tag({text}){return <View style={styles.tag}><Text style={styles.tagText}>{text}</Text></View>} function Metric({label,value,sub}){return <View style={styles.metric}><Text style={styles.metricLabel}>{label}</Text><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricSub}>{sub}</Text></View>}
+const styles=StyleSheet.create({page:{flex:1,backgroundColor:colors.bg,paddingHorizontal:20},content:{paddingBottom:150},artWrap:{height:274,alignItems:'center',justifyContent:'center',marginTop:4},art:{width:200,height:274,borderRadius:8},kicker:{color:colors.purple,fontSize:8,fontWeight:'800',marginTop:12},name:{color:colors.text,fontSize:25,fontWeight:'800',marginTop:4},chips:{flexDirection:'row',gap:7,marginTop:9},tag:{borderWidth:1,borderColor:colors.border,borderRadius:12,paddingHorizontal:9,paddingVertical:5},tagText:{color:colors.textSecondary,fontSize:8},metrics:{flexDirection:'row',gap:8,marginTop:16},metric:{flex:1,backgroundColor:colors.card,borderWidth:1,borderColor:colors.border,borderRadius:10,padding:12},metricLabel:{color:colors.textTertiary,fontSize:7,fontWeight:'700'},metricValue:{color:colors.purple,fontSize:16,fontWeight:'800',marginTop:6},metricSub:{color:colors.textTertiary,fontSize:7,marginTop:3},notes:{backgroundColor:colors.card,borderWidth:1,borderColor:colors.border,borderRadius:10,padding:12,marginTop:10},notesTitle:{color:colors.text,fontSize:9,fontWeight:'700'},notesText:{color:colors.textSecondary,fontSize:8,lineHeight:13,marginTop:6},link:{height:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},linkText:{color:colors.purple,fontSize:9,fontWeight:'700'},actions:{position:'absolute',left:20,right:20,bottom:10},primary:{height:47,borderRadius:7,backgroundColor:colors.purple,alignItems:'center',justifyContent:'center'},primaryText:{color:colors.bg,fontSize:11,fontWeight:'800'},secondary:{height:41,borderRadius:7,borderWidth:1,borderColor:colors.border,alignItems:'center',justifyContent:'center',marginTop:7,backgroundColor:colors.bg},secondaryText:{color:colors.text,fontSize:10,fontWeight:'700'}});
