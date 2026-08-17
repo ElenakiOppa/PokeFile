@@ -53,10 +53,11 @@ export default function BinderDetailScreen({
   const compactCards = true;
   const columns = pocketLayout === 9 ? 3 : 4;
   const rows = Math.ceil(pageCapacity / columns);
-  // Viewport minus the screen inset, page margins/borders, and grid padding.
+  // Viewport minus the screen inset and grid padding. The binder grid itself
+  // deliberately has no surrounding frame or horizontal page margin.
   // Keeping this derived from the actual window width guarantees 3 × 3 and
   // 4-column pages do not wrap when the surrounding screen padding changes.
-  const pageContentWidth = width - 40 - 32 - 2 - 16;
+  const pageContentWidth = width - 40 - 16;
   const horizontalCardWidth = Math.floor(
     (pageContentWidth - GAP * (columns - 1)) / columns,
   );
@@ -66,13 +67,13 @@ export default function BinderDetailScreen({
   // accessibility fallback).
   const availableGridHeight = Math.max(300, height - 420);
   const verticalCardWidth = Math.floor(
-    (availableGridHeight / rows - 36 - GAP) / 1.28,
+    (availableGridHeight / rows - 31 - 8) / 1.34,
   );
   const cardWidth = Math.min(
     horizontalCardWidth,
     Math.max(columns === 4 ? 54 : 64, verticalCardWidth),
   );
-  const cardImageHeight = Math.round(cardWidth * 1.28);
+  const cardImageHeight = Math.round(cardWidth * 1.34);
   const isFreeform = savedBinder?.kind === "freeform";
   const requirementSlots = useMemo(
     () => getGeneratedBinderSlots(binder, tier),
@@ -446,7 +447,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 15,
+    marginTop: 10,
   },
   settingsButton: {
     width: 30,
@@ -477,12 +478,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    marginTop: 22,
+    marginTop: 10,
   },
   pageArrow: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.purple,
     backgroundColor: colors.purpleSoft,
@@ -492,8 +493,8 @@ const styles = StyleSheet.create({
   pageArrowDisabled: { opacity: 0.25, borderColor: colors.border },
   pageArrowText: {
     color: colors.text,
-    fontSize: 30,
-    lineHeight: 32,
+    fontSize: 26,
+    lineHeight: 28,
     fontWeight: "300",
   },
   pagePosition: { alignItems: "center" },
@@ -510,14 +511,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   page: {
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 40,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingTop: 8,
+    marginTop: 6,
+    marginBottom: 8,
     overflow: "hidden",
   },
   collectPageButton: {
@@ -538,9 +533,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: GAP,
+    gap: 8,
     paddingHorizontal: 8,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   cardTile: { position: "relative" },
   pocket: {
@@ -598,7 +593,7 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 2,
   },
-  compactMetaRow: { display: "flex", alignItems: "flex-start", minHeight: 25 },
+  compactMetaRow: { display: "flex", alignItems: "flex-start", minHeight: 21 },
   cardMetaText: { flex: 1, minWidth: 0 },
   compactCollect: {
     position: "absolute",
