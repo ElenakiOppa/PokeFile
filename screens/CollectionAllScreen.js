@@ -13,6 +13,7 @@ import { colors } from "../theme";
 import { CARD_LIBRARY } from "../data";
 import EmptyState from "../components/EmptyState";
 import CollectionSectionTabs from "../components/CollectionSectionTabs";
+import { normalizePrintedRarity } from "../lib/cardRarity";
 
 const { width } = Dimensions.get("window");
 const COLS = 3;
@@ -44,7 +45,7 @@ export default function CollectionAllScreen({
     if (ownership === "Owned" && quantity <= 0) return false;
     if (ownership === "Missing" && quantity > 0) return false;
     if (selectedSets.length && !selectedSets.includes(card.setName)) return false;
-    if (collectionFilters.rarity && collectionFilters.rarity !== "All" && card.rarity !== collectionFilters.rarity) return false;
+    if (collectionFilters.rarity && collectionFilters.rarity !== "All" && normalizePrintedRarity(card.rarity) !== collectionFilters.rarity) return false;
     if (collectionFilters.condition && collectionFilters.condition !== "All") {
       if (quantity <= 0 || (rawAcquisitions[card.id]?.condition || "Raw") !== collectionFilters.condition) return false;
     }

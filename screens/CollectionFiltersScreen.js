@@ -3,11 +3,12 @@ import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme";
 import FilterChip from "../components/FilterChip";
-import { CARD_LIBRARY, SETS } from "../data";
+import { SETS } from "../data";
 import CollectionSectionTabs from "../components/CollectionSectionTabs";
+import { PRINTED_RARITIES, printedRarityLabel } from "../lib/cardRarity";
 
 const SET_OPTIONS = Array.from(new Set(SETS.map((set) => set.name).filter(Boolean))).sort();
-const RARITY = ["All", ...Array.from(new Set(CARD_LIBRARY.map((card) => card.rarity).filter(Boolean))).sort()];
+const RARITY = ["All", ...PRINTED_RARITIES];
 const CONDITION = ["All", "Raw", "Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged", "PSA 10", "PSA 9", "PSA 8"];
 const OWNERSHIP = ["All Cards", "Owned", "Missing"];
 const DEFAULTS = { sets: [], rarity: "All", condition: "All", ownership: "Owned" };
@@ -33,7 +34,7 @@ export default function CollectionFiltersScreen({ goBack, navigate, collectionFi
       <Text style={styles.sectionLabel}>EXPANSION SET</Text>
       <TouchableOpacity style={styles.dropdown} onPress={() => setSetPickerOpen(true)}><View style={styles.dropdownCopy}><Text style={styles.dropdownValue} numberOfLines={1}>{setSummary}</Text><Text style={styles.dropdownHint}>Choose one or multiple sets</Text></View><Ionicons name="chevron-down" size={20} color={colors.purple} /></TouchableOpacity>
       {sets.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectedRail}>{sets.map((name) => <TouchableOpacity key={name} style={styles.selectedSet} onPress={() => toggleSet(name)}><Text style={styles.selectedSetText} numberOfLines={1}>{name}</Text><Ionicons name="close" size={14} color={colors.purple} /></TouchableOpacity>)}</ScrollView> : null}
-      <Text style={styles.sectionLabel}>RARITY</Text><View style={styles.chipRow}>{RARITY.map((item) => <FilterChip key={item} label={item} active={rarity === item} onPress={() => setRarity(item)} />)}</View>
+      <Text style={styles.sectionLabel}>PRINTED RARITY</Text><View style={styles.chipRow}>{RARITY.map((item) => <FilterChip key={item} label={printedRarityLabel(item)} active={rarity === item} onPress={() => setRarity(item)} />)}</View>
       <Text style={styles.sectionLabel}>CONDITION</Text><View style={styles.chipRow}>{CONDITION.map((item) => <FilterChip key={item} label={item} active={condition === item} onPress={() => setCondition(item)} />)}</View>
       <Text style={styles.sectionLabel}>OWNERSHIP</Text><View style={styles.chipRow}>{OWNERSHIP.map((item) => <FilterChip key={item} label={item} active={ownership === item} onPress={() => setOwnership(item)} />)}</View>
     </ScrollView>
