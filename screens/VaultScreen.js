@@ -1,351 +1,65 @@
-import React, { useMemo, useState } from "react";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useMemo } from "react";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../theme";
-import EmptyState from "../components/EmptyState";
 import { CARD_LIBRARY } from "../data";
 import { calculateVaultPortfolio, formatMoney } from "../lib/valueEngine";
-import { calculateVaultInsights } from "../lib/vaultInsights";
 import { useAppContext } from "../AppContext";
 import { sealedAssetImageSource } from "../data/sealedProductCatalog";
-const TABS = ["Raw", "Graded", "Sealed"];
-export default function VaultScreen({
-  navigate,
-  collectionQuantities = {},
-  vaultAssets = [],
-  wishlistItems = [],
-  rawAcquisitions = {},
-}) {
+import { MiniSparkline, SectionLabel, VaultHeader } from "../components/VaultUi";
+
+export default function VaultScreen({ navigate, collectionQuantities = {}, vaultAssets = [], rawAcquisitions = {}, valueSnapshots = [] }) {
   const { preferences } = useAppContext();
   const currency = preferences.currency || "EUR";
-  const [tab, setTab] = useState("Raw");
-  const portfolio = useMemo(
-    () =>
-      calculateVaultPortfolio({
-        ownership: collectionQuantities,
-        cards: CARD_LIBRARY,
-        assets: vaultAssets,
-        rawAcquisitions,
-        currency,
-      }),
-    [collectionQuantities, vaultAssets, rawAcquisitions, currency],
-  );
-  const items =
-    tab === "Raw"
-      ? portfolio.rawAssets
-      : tab === "Graded"
-        ? portfolio.gradedAssets
-        : portfolio.sealedAssets;
-  const insights = calculateVaultInsights(portfolio, wishlistItems);
-  return (
-    <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
-      <View style={s.head}>
-        <Text style={s.label}>PORTFOLIO VAULT</Text>
-        <Text style={s.title}>Your assets</Text>
-        <Text style={s.value}>
-          {formatMoney(portfolio.totalValue, currency)}
-        </Text>
-        <Text style={s.sub}>Collection Value</Text>
+  const portfolio = useMemo(() => calculateVaultPortfolio({ ownership: collectionQuantities, cards: CARD_LIBRARY, assets: vaultAssets, rawAcquisitions, currency }), [collectionQuantities, vaultAssets, rawAcquisitions, currency]);
+  const snapshots = [...valueSnapshots].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const monthStart = snapshots.find((item) => Date.now() - new Date(item.timestamp).getTime() <= 31 * 86400000)?.totalValue ?? snapshots[0]?.totalValue ?? portfolio.totalValue;
+  const monthChange = portfolio.totalValue - Number(monthStart || 0);
+  const monthPercent = monthStart ? (monthChange / monthStart) * 100 : 0;
+  const allocationTotal = portfolio.gradedValue + portfolio.sealedValue || 1;
+  const topAssets = [...portfolio.gradedAssets, ...portfolio.sealedAssets].sort((a, b) => Number(b.value || 0) - Number(a.value || 0)).slice(0, 3);
+  const imageFor = (item) => item.card?.image ? { uri: item.card.image } : item.type === "sealed" ? sealedAssetImageSource(item) : item.image ? { uri: item.image } : null;
+
+  return <View style={s.screen}>
+    <VaultHeader title="My Vault" onRight={() => navigate("Notifications")} rightIcon="notifications-outline" />
+    <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <View style={s.valuationCard}>
+        <Text style={s.kicker}>TOTAL EST. VAULT VALUE</Text>
+        <Text style={s.total}>{formatMoney(portfolio.totalValue, currency)}</Text>
+        <View style={s.changeBadge}><Text style={s.changeText}>{monthChange >= 0 ? "↑ +" : "↓ "}{formatMoney(monthChange, currency)} ({monthPercent >= 0 ? "+" : ""}{monthPercent.toFixed(2)}%) This Month</Text></View>
+        <View style={s.spark}><MiniSparkline values={snapshots.map((item) => item.totalValue).concat(portfolio.totalValue)} /></View>
       </View>
-      <View style={s.breakdown}>
-        {[
-          ["Raw", portfolio.rawValue],
-          ["Graded", portfolio.gradedValue],
-          ["Sealed", portfolio.sealedValue],
-        ].map(([label, value]) => (
-          <View key={label}>
-            <Text style={s.breakValue}>{formatMoney(value, currency)}</Text>
-            <Text style={s.breakLabel}>{label}</Text>
-          </View>
-        ))}
-      </View>
-      {portfolio.trackedCostBasis > 0 ? (
-        <View style={s.tracked}>
-          <Text style={s.trackedLabel}>TRACKED COST BASIS</Text>
-          <Text style={s.trackedValue}>
-            {formatMoney(portfolio.trackedCostBasis, currency)}
-          </Text>
-          <Text style={s.trackedMeta}>
-            {formatMoney(portfolio.trackedAssetsValue, currency)} tracked value
-            · {Math.round(portfolio.coveragePercent)}% value coverage
-          </Text>
-          <Text style={s.trackedGain}>
-            {portfolio.unrealizedGain >= 0 ? "+" : ""}
-            {formatMoney(portfolio.unrealizedGain, currency)} unrealized on
-            tracked assets
-          </Text>
-        </View>
-      ) : null}
-      <View style={s.actions}>
-        <TouchableOpacity
-          style={s.primary}
-          onPress={() => navigate("AddGradedAsset")}
-        >
-          <Text style={s.primaryText}>Add Graded Card</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={s.secondary}
-          onPress={() => navigate("AddSealedAsset")}
-        >
-          <Text style={s.secondaryText}>Add Sealed Product</Text>
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity
-        style={s.historyLink}
-        onPress={() => navigate("ValueHistory")}
-      >
-        <Text style={s.historyText}>View Value History</Text>
-        <Text style={s.chevron}>›</Text>
-      </TouchableOpacity>
-      <View style={s.tabs}>
-        {TABS.map((item) => (
-          <TouchableOpacity
-            key={item}
-            style={[s.tab, tab === item && s.tabActive]}
-            onPress={() => setTab(item)}
-          >
-            <Text style={[s.tabText, tab === item && s.tabTextActive]}>
-              {item}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      {items.length ? (
-        <View style={s.list}>
-          {items.map((item) => {
-            const imageSource = item.card?.image
-              ? { uri: item.card.image }
-              : item.type === "sealed"
-                ? sealedAssetImageSource(item)
-                : item.image
-                  ? { uri: item.image }
-                  : null;
-            return (
-            <TouchableOpacity
-              key={item.id}
-              style={s.row}
-              onPress={() =>
-                item.type === "raw"
-                  ? navigate("CardDetail", { cardId: item.id })
-                  : navigate("VaultAssetDetail", { assetId: item.id })
-              }
-            >
-              {imageSource ? (
-                <Image
-                  source={imageSource}
-                  style={s.thumb}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={[s.thumb, s.noImage]}>
-                  <Text style={s.noImageText}>◇</Text>
-                </View>
-              )}
-              <View style={s.rowCopy}>
-                <Text style={s.name}>
-                  {item.card?.name || item.productName || item.name}
-                </Text>
-                <Text style={s.meta}>
-                  {item.type === "graded"
-                    ? `${item.company} ${item.grade}`
-                    : item.type === "sealed"
-                      ? `${item.productType} · ${item.sourceType}`
-                      : `${item.card.variant || item.card.finish} · ×${item.quantity}`}
-                </Text>
-                {item.manualOverride ? (
-                  <Text style={s.override}>MANUAL VALUE</Text>
-                ) : null}
-              </View>
-              <View>
-                <Text style={s.rowValue}>
-                  {item.quote
-                    ? formatMoney(item.value, currency)
-                    : "Unavailable"}
-                </Text>
-                <Text style={s.qty}>×{item.quantity}</Text>
-              </View>
-            </TouchableOpacity>
-            );
-          })}
-        </View>
-      ) : (
-        <View style={s.empty}>
-          {tab === "Raw" ? (
-            <EmptyState
-              icon="◇"
-              title="No raw cards yet"
-              subtitle="Owned raw cards appear here automatically."
-              buttonLabel="Browse sets"
-              onButtonPress={() => navigate("AllSets")}
-            />
-          ) : (
-            <EmptyState
-              icon="◇"
-              title={
-                tab === "Graded"
-                  ? "No graded cards yet"
-                  : "No sealed products yet"
-              }
-              subtitle="Your best cardboard is still hiding elsewhere."
-              buttonLabel={
-                tab === "Graded" ? "Add Graded Card" : "Add Sealed Product"
-              }
-              onButtonPress={() =>
-                navigate(tab === "Graded" ? "AddGradedAsset" : "AddSealedAsset")
-              }
-            />
-          )}
-        </View>
-      )}
-      {insights.length ? (
-        <View style={s.insights}>
-          <Text style={s.insightLabel}>VAULT NOTES</Text>
-          {insights.map((line) => (
-            <Text key={line} style={s.insight}>
-              {line}
-            </Text>
-          ))}
-        </View>
-      ) : null}
+
+      <View style={s.section}><SectionLabel>Asset Allocation</SectionLabel><View style={s.allocationRow}>
+        <Allocation title="Graded Cards" value={formatMoney(portfolio.gradedValue, currency)} meta={`${portfolio.gradedAssets.length} Items • ${((portfolio.gradedValue / allocationTotal) * 100).toFixed(1)}%`} />
+        <Allocation title="Sealed Boxes" value={formatMoney(portfolio.sealedValue, currency)} meta={`${portfolio.sealedAssets.length} Items • ${((portfolio.sealedValue / allocationTotal) * 100).toFixed(1)}%`} />
+      </View></View>
+
+      <View style={s.section}><SectionLabel action="View All" onAction={() => navigate("CollectionAll")}>Top Value Assets</SectionLabel><View style={s.assets}>
+        {topAssets.length ? topAssets.map((item) => <TouchableOpacity key={item.id} style={s.assetRow} onPress={() => navigate("VaultAssetDetail", { assetId: item.id })}>
+          {imageFor(item) ? <Image source={imageFor(item)} style={s.thumb} resizeMode="contain" /> : <View style={[s.thumb, s.emptyThumb]}><Text style={s.emptyMark}>◇</Text></View>}
+          <View style={s.assetCopy}><Text style={s.assetName} numberOfLines={1}>{item.card?.name || item.productName || item.name}</Text><Text style={s.assetMeta} numberOfLines={1}>{item.type === "graded" ? `${item.company} ${item.grade}` : `${item.productType || "Sealed"} · ×${item.quantity}`}</Text></View>
+          <View style={s.assetRight}><Text style={s.assetValue}>{item.quote ? formatMoney(item.value, currency) : "Unavailable"}</Text><Text style={s.assetMove}>{item.manualOverride ? "MANUAL" : "LIVE VALUE"}</Text></View>
+        </TouchableOpacity>) : <View style={s.empty}><Text style={s.emptyTitle}>No premium assets yet</Text><Text style={s.emptyText}>Add a graded card or sealed product to begin your Vault.</Text></View>}
+      </View></View>
+
+      <View style={s.vaultTabs}><VaultTab icon="shield-checkmark-outline" label="Vault" active onPress={() => {}} /><VaultTab icon="add-circle-outline" label="Add" onPress={() => navigate("AddGradedAsset")} /><VaultTab icon="analytics-outline" label="History" onPress={() => navigate("ValueHistory")} /></View>
     </ScrollView>
-  );
+  </View>;
 }
+
+const Allocation = ({ title, value, meta }) => <View style={s.allocation}><Text style={s.allocationTitle}>{title}</Text><Text style={s.allocationValue}>{value}</Text><Text style={s.allocationMeta}>{meta}</Text></View>;
+const VaultTab = ({ icon, label, active, onPress }) => <TouchableOpacity style={s.vaultTab} onPress={onPress}><Ionicons name={icon} size={19} color={active ? colors.purple : colors.textTertiary} /><Text style={[s.vaultTabText, active && s.vaultTabActive]}>{label}</Text></TouchableOpacity>;
+
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  head: { paddingHorizontal: 24, paddingTop: 24 },
-  label: {
-    color: colors.textTertiary,
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 2,
-  },
-  title: { color: colors.text, fontSize: 29, fontWeight: "700", marginTop: 4 },
-  value: { color: colors.text, fontSize: 48, fontWeight: "300", marginTop: 12 },
-  sub: { color: colors.textSecondary, fontSize: 12, marginTop: 3 },
-  breakdown: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    marginTop: 30,
-  },
-  breakValue: { color: colors.text, fontSize: 15, fontWeight: "500" },
-  breakLabel: { color: colors.textTertiary, fontSize: 9, marginTop: 5 },
-  tracked: {
-    margin: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-  },
-  trackedLabel: { color: colors.textTertiary, fontSize: 8, letterSpacing: 1.4 },
-  trackedValue: {
-    color: colors.text,
-    fontSize: 25,
-    fontWeight: "300",
-    marginTop: 8,
-  },
-  trackedMeta: { color: colors.textSecondary, fontSize: 9, marginTop: 5 },
-  trackedGain: { color: colors.purple, fontSize: 10, marginTop: 8 },
-  actions: {
-    flexDirection: "row",
-    gap: 9,
-    marginHorizontal: 24,
-    marginTop: 24,
-  },
-  primary: {
-    flex: 1,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.purple,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primaryText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-  secondary: {
-    flex: 1,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  secondaryText: { color: colors.text, fontSize: 10, fontWeight: "700" },
-  historyLink: {
-    marginHorizontal: 24,
-    marginTop: 15,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  historyText: { color: colors.text, fontSize: 13 },
-  chevron: { color: colors.textSecondary },
-  tabs: { flexDirection: "row", marginHorizontal: 24, marginTop: 28 },
-  tab: {
-    paddingHorizontal: 17,
-    paddingVertical: 9,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: 8,
-  },
-  tabActive: { backgroundColor: colors.purple, borderColor: colors.purple },
-  tabText: { color: colors.textSecondary, fontSize: 11, fontWeight: "600" },
-  tabTextActive: { color: "#fff" },
-  list: { paddingHorizontal: 24, marginTop: 17 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-  },
-  thumb: {
-    width: 52,
-    height: 68,
-    borderRadius: 7,
-    backgroundColor: colors.card,
-  },
-  noImage: { alignItems: "center", justifyContent: "center" },
-  noImageText: { color: colors.purple },
-  rowCopy: { flex: 1, marginLeft: 13 },
-  name: { color: colors.text, fontSize: 14, fontWeight: "600" },
-  meta: { color: colors.textSecondary, fontSize: 9, marginTop: 4 },
-  override: {
-    color: colors.purple,
-    fontSize: 7,
-    fontWeight: "800",
-    letterSpacing: 1,
-    marginTop: 4,
-  },
-  rowValue: { color: colors.text, fontSize: 12, textAlign: "right" },
-  qty: {
-    color: colors.textTertiary,
-    fontSize: 8,
-    textAlign: "right",
-    marginTop: 5,
-  },
-  empty: { height: 330 },
-  insights: {
-    margin: 24,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderColor: colors.border,
-  },
-  insightLabel: {
-    color: colors.textTertiary,
-    fontSize: 8,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-  },
-  insight: { color: colors.text, fontSize: 15, lineHeight: 22, marginTop: 14 },
+  screen: { flex: 1, backgroundColor: colors.bg }, content: { paddingHorizontal: 24, paddingBottom: 18 },
+  valuationCard: { minHeight: 205, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 20 },
+  kicker: { color: colors.textSecondary, fontSize: 10, fontWeight: "600" }, total: { color: colors.text, fontSize: 34, fontWeight: "800", marginTop: 4 },
+  changeBadge: { alignSelf: "flex-start", borderRadius: 6, backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 4, marginTop: 5 }, changeText: { color: "#10B981", fontSize: 9, fontWeight: "700" }, spark: { flex: 1, justifyContent: "flex-end", paddingTop: 10 },
+  section: { marginTop: 24 }, allocationRow: { flexDirection: "row", gap: 12, marginTop: 12 }, allocation: { flex: 1, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 16 },
+  allocationTitle: { color: colors.textSecondary, fontSize: 11 }, allocationValue: { color: colors.purple, fontSize: 17, fontWeight: "800", marginTop: 8 }, allocationMeta: { color: colors.textTertiary, fontSize: 8, marginTop: 8 },
+  assets: { gap: 8, marginTop: 12 }, assetRow: { minHeight: 66, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 10, flexDirection: "row", alignItems: "center", gap: 10 }, thumb: { width: 46, height: 46, borderRadius: 8, backgroundColor: colors.card }, emptyThumb: { alignItems: "center", justifyContent: "center" }, emptyMark: { color: colors.purple },
+  assetCopy: { flex: 1, minWidth: 0 }, assetName: { color: colors.text, fontSize: 11, fontWeight: "700" }, assetMeta: { color: colors.textTertiary, fontSize: 8, marginTop: 3 }, assetRight: { alignItems: "flex-end", maxWidth: 88 }, assetValue: { color: colors.text, fontSize: 10, fontWeight: "800" }, assetMove: { color: "#10B981", fontSize: 7, fontWeight: "700", marginTop: 4 },
+  empty: { padding: 22, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, emptyTitle: { color: colors.text, fontSize: 13, fontWeight: "700" }, emptyText: { color: colors.textSecondary, fontSize: 9, lineHeight: 14, marginTop: 5 },
+  vaultTabs: { height: 58, marginHorizontal: -24, marginTop: 16, paddingHorizontal: 24, borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: "row", justifyContent: "space-between" }, vaultTab: { width: 72, alignItems: "center", justifyContent: "center" }, vaultTabText: { color: colors.textTertiary, fontSize: 8, marginTop: 3 }, vaultTabActive: { color: colors.purple, fontWeight: "700" },
 });

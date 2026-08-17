@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { colors } from "../theme";
-import TopBar from "../components/TopBar";
+import { VaultHeader } from "../components/VaultUi";
 import {
   createSealedAsset,
   normalizeVaultAsset,
@@ -174,17 +174,9 @@ export default function AddSealedAssetScreen({
     navigate("VaultAssetDetail", { assetId: asset.id });
   };
   return (
-    <ScrollView style={s.container}>
-      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
-      <View style={s.content}>
-        <Text style={s.eyebrow}>
-          {current ? "EDIT SEALED ASSET" : "ADD SEALED PRODUCT"}
-        </Text>
-        <Text style={s.title}>
-          {current
-            ? "Update the product record."
-            : "Add a sealed product to your Vault."}
-        </Text>
+    <View style={s.container}>
+      <VaultHeader title={current ? "Edit Sealed Asset" : "Add Sealed Asset"} goBack={goBack} />
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <Text style={s.notice}>
           Search live sealed artwork and Cardmarket pricing, choose verified
           official artwork, or enter a product manually.
@@ -379,15 +371,15 @@ export default function AddSealedAssetScreen({
         />
         <F label="PRIVATE NOTE" value={note} onChangeText={setNote} multiline />
         <TouchableOpacity style={s.save} onPress={save}>
-          <Text style={s.saveText}>Save Sealed Asset</Text>
+          <Text style={s.saveText}>{current ? "Save Sealed Asset" : "Add Sealed Product to Vault"}</Text>
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 24, paddingBottom: 50 },
+  content: { paddingHorizontal: 24, paddingBottom: 50 },
   eyebrow: {
     color: colors.purple,
     fontSize: 9,
@@ -406,7 +398,7 @@ const s = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 10,
     lineHeight: 16,
-    marginTop: 14,
+    marginTop: 16,
     padding: 13,
     borderWidth: 1,
     borderColor: colors.border,
@@ -428,7 +420,7 @@ const s = StyleSheet.create({
   setLogo: { width: "100%", height: 55 },
   setName: { color: colors.text, fontSize: 10, fontWeight: "600" },
   setSelector: {
-    minHeight: 62,
+    minHeight: 52,
     marginTop: 16,
     borderRadius: 14,
     borderWidth: 1,
@@ -443,15 +435,15 @@ const s = StyleSheet.create({
   setSelectorValue: { color: colors.text, fontSize: 13, fontWeight: "600", marginTop: 6 },
   setSelectorArrow: { color: colors.textSecondary, fontSize: 22 },
   liveSearch: {
-    height: 44,
-    borderRadius: 22,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: colors.purple,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 10,
   },
   liveSearchDisabled: { opacity: 0.6 },
-  liveSearchText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  liveSearchText: { color: colors.bg, fontSize: 11, fontWeight: "800" },
   liveError: { color: colors.red, fontSize: 10, marginTop: 9 },
   liveLabel: {
     color: colors.textTertiary,
@@ -500,7 +492,7 @@ const s = StyleSheet.create({
     marginTop: 7,
   },
   catalogMeta: { color: colors.textTertiary, fontSize: 8, marginTop: 4 },
-  field: { marginTop: 15 },
+  field: { marginTop: 16 },
   label: {
     color: colors.textTertiary,
     fontSize: 8,
@@ -509,20 +501,21 @@ const s = StyleSheet.create({
     marginBottom: 7,
   },
   input: {
-    minHeight: 48,
-    borderRadius: 11,
+    minHeight: 42,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     color: colors.text,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   section: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "600",
-    marginTop: 27,
+    color: colors.textTertiary,
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 1,
+    marginTop: 19,
   },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 11 },
   chip: {
@@ -532,16 +525,16 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  chipOn: { backgroundColor: colors.purple, borderColor: colors.purple },
+  chipOn: { backgroundColor: colors.purpleSoft, borderColor: colors.purple },
   chipText: { color: colors.textSecondary, fontSize: 9 },
-  chipTextOn: { color: "#fff", fontWeight: "700" },
+  chipTextOn: { color: colors.purple, fontWeight: "700" },
   save: {
     height: 52,
-    borderRadius: 26,
+    borderRadius: 12,
     backgroundColor: colors.purple,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 30,
   },
-  saveText: { color: "#fff", fontWeight: "700" },
+  saveText: { color: colors.bg, fontWeight: "800", fontSize: 11 },
 });

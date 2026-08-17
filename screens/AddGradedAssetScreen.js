@@ -9,15 +9,15 @@ import {
   View,
 } from "react-native";
 import { colors } from "../theme";
-import TopBar from "../components/TopBar";
+import { VaultHeader } from "../components/VaultUi";
 import { CARD_LIBRARY, getCardById } from "../data";
 import {
   createGradedAsset,
   GRADING_COMPANIES,
   normalizeVaultAsset,
 } from "../lib/vault";
-const Field = ({ label, ...props }) => (
-  <View style={s.field}>
+const Field = ({ label, containerStyle, ...props }) => (
+  <View style={[s.field, containerStyle]}>
     <Text style={s.label}>{label}</Text>
     <TextInput
       placeholderTextColor={colors.textTertiary}
@@ -117,17 +117,13 @@ export default function AddGradedAssetScreen({
     navigate("VaultAssetDetail", { assetId: asset.id });
   };
   return (
-    <ScrollView style={s.container}>
-      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
-      <View style={s.content}>
-        <Text style={s.eyebrow}>
-          {current ? "EDIT GRADED ASSET" : "ADD GRADED COPY"}
-        </Text>
+    <View style={s.container}>
+      <VaultHeader title={current ? "Edit Graded Card" : "Add Graded Card"} goBack={goBack} />
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {!card ? (
           <>
-            <Text style={s.title}>Choose the canonical card.</Text>
             <Field
-              label="SEARCH CARD CATALOG"
+              label="SELECT POKÉMON CARD"
               value={query}
               onChangeText={setQuery}
               placeholder="Name, set or number"
@@ -150,22 +146,12 @@ export default function AddGradedAssetScreen({
           </>
         ) : (
           <>
-            <TouchableOpacity
-              style={s.selected}
-              onPress={() => !current && setCard(null)}
-            >
+            <TouchableOpacity style={s.selected} onPress={() => !current && setCard(null)}>
               <Image source={{ uri: card.image }} style={s.card} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.selectedName}>{card.name}</Text>
-                <Text style={s.resultMeta}>
-                  {card.setName} · #{card.number}
-                </Text>
-                <Text style={s.change}>
-                  {current ? "CANONICAL CARD" : "Change card"}
-                </Text>
-              </View>
+              <Text style={s.selectedName} numberOfLines={1}>{card.name} · {card.setName} #{card.number}</Text>
+              <Text style={s.change}>{current ? "VERIFIED" : "CHANGE"}</Text>
             </TouchableOpacity>
-            <Text style={s.section}>GRADING</Text>
+            <Text style={s.section}>GRADING SERVICE</Text>
             <View style={s.chips}>
               {GRADING_COMPANIES.map((item) => (
                 <TouchableOpacity
@@ -179,71 +165,31 @@ export default function AddGradedAssetScreen({
                 </TouchableOpacity>
               ))}
             </View>
+            <View style={s.two}><Field containerStyle={s.half} label="GRADE" value={grade} onChangeText={setGrade} placeholder="10" /><Field containerStyle={s.half} label="CERT NUMBER" value={cert} onChangeText={setCert} placeholder="48271049" /></View>
+            <View style={s.two}><Field containerStyle={s.half} label="PURCHASE COST" value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="0.00" /><Field containerStyle={s.half} label="DATE ACQUIRED" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" /></View>
+            <View style={s.two}><Field containerStyle={s.half} label="QUANTITY" value={quantity} onChangeText={setQuantity} keyboardType="number-pad" /><Field containerStyle={s.half} label="SOURCE" value={source} onChangeText={setSource} placeholder="Shop, event, trade" /></View>
             <Field
-              label="GRADE"
-              value={grade}
-              onChangeText={setGrade}
-              placeholder="10, 9.5, Pristine…"
-            />
-            <Field
-              label="CERTIFICATION NUMBER · PRIVATE"
-              value={cert}
-              onChangeText={setCert}
-              placeholder="Stored exactly as entered"
-            />
-            <Field
-              label="QUANTITY"
-              value={quantity}
-              onChangeText={setQuantity}
-              keyboardType="number-pad"
-            />
-            <Text style={s.section}>ACQUISITION · OPTIONAL</Text>
-            <Field
-              label="UNIT PURCHASE PRICE"
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="decimal-pad"
-              placeholder="EUR"
-            />
-            <Field
-              label="PURCHASE DATE"
-              value={date}
-              onChangeText={setDate}
-              placeholder="YYYY-MM-DD"
-            />
-            <Field
-              label="SOURCE"
-              value={source}
-              onChangeText={setSource}
-              placeholder="Shop, event, trade…"
-            />
-            <Text style={s.section}>VALUATION</Text>
-            <Field
-              label="MANUAL VALUE · OPTIONAL"
+              label="MANUAL MARKET VALUE · OPTIONAL"
               value={manual}
               onChangeText={setManual}
               keyboardType="decimal-pad"
               placeholder="No graded provider price available"
             />
-            <Field
-              label="PRIVATE NOTE"
-              value={note}
-              onChangeText={setNote}
-              multiline
-              placeholder="Optional"
-            />
+            <Field label="PRIVATE NOTE" value={note} onChangeText={setNote} multiline placeholder="Optional" />
+            <Text style={s.section}>PHOTO OF SLAB</Text>
+            <View style={s.photoRow}><View style={s.photoAdd}><Text style={s.photoPlus}>＋</Text><Text style={s.photoText}>Add Photo</Text></View><Image source={{ uri: card.image }} style={s.photoPreview} resizeMode="contain" /></View>
             <TouchableOpacity style={s.save} onPress={save}>
-              <Text style={s.saveText}>Save Graded Asset</Text>
+              <Text style={s.saveText}>{current ? "Save Graded Asset" : "Add Graded Asset to Vault"}</Text>
             </TouchableOpacity>
           </>
         )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 24, paddingBottom: 50 },
+  content: { paddingHorizontal: 24, paddingBottom: 48 },
   eyebrow: {
     color: colors.purple,
     fontSize: 9,
@@ -258,23 +204,25 @@ const s = StyleSheet.create({
     marginTop: 14,
     marginBottom: 20,
   },
-  field: { marginTop: 15 },
+  field: { marginTop: 16 },
+  half: { flex: 1 },
+  two: { flexDirection: "row", gap: 12 },
   label: {
     color: colors.textTertiary,
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: "700",
     letterSpacing: 1.2,
     marginBottom: 7,
   },
   input: {
-    minHeight: 48,
-    borderRadius: 11,
+    minHeight: 42,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     color: colors.text,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   result: {
     flexDirection: "row",
@@ -289,46 +237,63 @@ const s = StyleSheet.create({
   selected: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 20,
-    padding: 12,
+    marginTop: 16,
+    padding: 9,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 13,
     backgroundColor: colors.surface,
   },
-  card: { width: 66, height: 92, marginRight: 14 },
-  selectedName: { color: colors.text, fontSize: 18, fontWeight: "600" },
+  card: { width: 30, height: 41, borderRadius: 4, marginRight: 10 },
+  selectedName: { color: colors.text, fontSize: 11, fontWeight: "600", flex: 1 },
   change: {
     color: colors.purple,
     fontSize: 8,
     fontWeight: "700",
-    marginTop: 9,
+    marginLeft: 8,
   },
   section: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "600",
-    marginTop: 29,
-    marginBottom: 4,
+    color: colors.textTertiary,
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 1,
+    marginTop: 18,
+    marginBottom: 7,
   },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 10 },
+  chips: { flexDirection: "row", gap: 8 },
   chip: {
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    borderRadius: 18,
+    flex: 1,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  chipOn: { backgroundColor: colors.purple, borderColor: colors.purple },
+  chipOn: { backgroundColor: colors.purpleSoft, borderColor: colors.purple },
   chipText: { color: colors.textSecondary, fontSize: 10 },
-  chipTextOn: { color: "#fff", fontWeight: "700" },
+  chipTextOn: { color: colors.purple, fontWeight: "700" },
+  photoRow: { flexDirection: "row", gap: 10 },
+  photoAdd: {
+    width: 76,
+    height: 76,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.purple,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoPlus: { color: colors.purple, fontSize: 22, lineHeight: 24 },
+  photoText: { color: colors.purple, fontSize: 8, marginTop: 3 },
+  photoPreview: { width: 76, height: 76, borderRadius: 10, backgroundColor: colors.surface },
   save: {
     height: 52,
-    borderRadius: 26,
+    borderRadius: 12,
     backgroundColor: colors.purple,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 30,
   },
-  saveText: { color: "#fff", fontWeight: "700" },
+  saveText: { color: colors.bg, fontWeight: "800", fontSize: 11 },
 });
