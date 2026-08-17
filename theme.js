@@ -48,6 +48,8 @@ const semanticColor = (value) => {
   if (whiteAlpha && settings.theme === 'Light') return `rgba(17,17,20,${whiteAlpha[1]})`;
   const accentAlpha = value.match(/^rgba\(139,\s*92,\s*246,\s*([\d.]+)\)$/i);
   if (accentAlpha) return hexToRgba(current.purple, Number(accentAlpha[1]));
+  const figmaAccentAlpha = value.match(/^rgba\(212,\s*175,\s*55,\s*([\d.]+)\)$/i);
+  if (figmaAccentAlpha) return hexToRgba(current.purple, Number(figmaAccentAlpha[1]));
   return value;
 };
 

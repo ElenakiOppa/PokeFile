@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#080808', justifyContent: 'center' },
   body: { paddingHorizontal: 24, gap: 32 },
   hero: { height: 317, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#121212', alignItems: 'center', overflow: 'hidden', padding: 24 },
-  glow: { position: 'absolute', top: 100, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(212,175,55,0.12)', shadowColor: '#D4AF37', shadowOpacity: 0.36, shadowRadius: 34 },
+  glow: { position: 'absolute', top: 200, width: 1, height: 1, borderRadius: 1, backgroundColor: colors.purple, shadowColor: colors.purple, shadowOpacity: 0.42, shadowRadius: 58, shadowOffset: { width: 0, height: 0 } },
   cards: { height: 180, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   sideCard: { width: 110, height: 150, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   leftCard: { transform: [{ rotate: '-12deg' }], marginRight: -36 },
