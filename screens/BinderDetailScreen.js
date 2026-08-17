@@ -477,7 +477,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 24,
     marginTop: 10,
   },
   pageArrow: {
@@ -532,9 +531,8 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
-    paddingHorizontal: 8,
+    justifyContent: "space-between",
+    rowGap: 8,
     paddingBottom: 4,
   },
   cardTile: { position: "relative" },
