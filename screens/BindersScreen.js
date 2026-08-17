@@ -1,117 +1,237 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { colors } from '../theme';
-import ProgressBar from '../components/ProgressBar';
-import { getSetById } from '../data';
-import { getSetRequirements, isOwned } from '../lib/collectibles';
-import BinderBook from '../components/BinderBook';
-import { getPrimaryFlexBinder } from '../lib/flexBinder';
-import FlexBinderBook from '../components/FlexBinderBook';
-
-const { width } = Dimensions.get('window');
-const BINDER_WIDTH = Math.min(300, width - 64);
-const CARD_GAP = 22;
-
-export default function BindersScreen({ navigate, binders = [], collectionQuantities = {} }) {
-  const primaryFlex = getPrimaryFlexBinder(binders);
-  const regularBinders = binders.filter((binder) => binder.kind !== 'flex');
-  const flexFilled = (primaryFlex?.slots || []).filter((slot) => slot?.card).length;
+import React, { useMemo } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../theme";
+import { getSetById } from "../data";
+import { getSetRequirements, isOwned } from "../lib/collectibles";
+import BinderBook from "../components/BinderBook";
+import FlexBinderBook from "../components/FlexBinderBook";
+import { getPrimaryFlexBinder } from "../lib/flexBinder";
+import { useAppContext } from "../AppContext";
+const W = (Dimensions.get("window").width - 64) / 2;
+export default function BindersScreen({
+  navigate,
+  binders = [],
+  collectionQuantities = {},
+}) {
+  const { userProfile } = useAppContext();
+  const flex = getPrimaryFlexBinder(binders);
+  const regular = binders.filter((b) => b.kind !== "flex");
+  const stats = useMemo(
+    () =>
+      regular.map((b) => {
+        const set = getSetById(b.setId);
+        const cards =
+          b.kind === "freeform"
+            ? (b.slots || []).map((s) => s?.card).filter(Boolean)
+            : getSetRequirements(set, b.tier);
+        const owned = cards.filter((c) =>
+          isOwned(collectionQuantities, c),
+        ).length;
+        return {
+          b,
+          set,
+          cards,
+          owned,
+          p: cards.length ? Math.round((owned / cards.length) * 100) : 0,
+        };
+      }),
+    [regular, collectionQuantities],
+  );
+  const completed = stats.reduce((a, x) => a + x.owned, 0),
+    total = stats.reduce((a, x) => a + x.cards.length, 0);
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.titleRow}>
-        <View>
-          <Text style={styles.eyebrow}>YOUR LIBRARY</Text>
-          <Text style={styles.title}>Binders</Text>
-          <Text style={styles.count}>{regularBinders.length} set binders</Text>
+    <View style={s.page}>
+      <ScrollView
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={s.head}>
+          <View>
+            <Text style={s.title}>My Vault</Text>
+            <Text style={s.kicker}>PREMIUM REGISTRIES</Text>
+          </View>
+          <TouchableOpacity
+            style={s.avatar}
+            onPress={() => navigate("Profile")}
+          >
+            {userProfile?.avatarUri ? (
+              <View />
+            ) : (
+              <Text style={s.avatarText}>
+                {(userProfile?.displayName || "PF").slice(0, 2).toUpperCase()}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={() => navigate('CoverDesigner', { mode: 'create' })}><Text style={styles.addPlus}>+</Text></TouchableOpacity>
-      </View>
-
-      <View style={styles.showcaseHeader}><Text style={styles.showcaseLabel}>YOUR SHOWCASE</Text>{primaryFlex ? <TouchableOpacity onPress={() => navigate('FlexBinderEditor', { binderId: primaryFlex.id })}><Text style={styles.editFlex}>Edit Flex Binder</Text></TouchableOpacity> : null}</View>
-      {primaryFlex ? <TouchableOpacity style={styles.showcase} onPress={() => navigate('FlexBinderPage', { binderId: primaryFlex.id })} activeOpacity={0.9}>
-        <View style={styles.flexBookWrap}><FlexBinderBook binder={primaryFlex} width={Math.min(284, width - 88)} /></View>
-        <View style={styles.showcaseCopy}><View><Text style={styles.showcaseName}>{primaryFlex.title || primaryFlex.name}</Text><Text style={styles.showcaseMeta}>PERSONAL FLEX BINDER · {flexFilled}/9 CARDS</Text></View><Text style={styles.openFlex}>Open Flex Binder ›</Text></View>
-      </TouchableOpacity> : <TouchableOpacity style={styles.createFlex} onPress={() => navigate('FlexBinderEditor')}><Text style={styles.createFlexTitle}>Create Flex Binder</Text><Text style={styles.createFlexText}>Curate one personal 3 × 3 collection showcase.</Text></TouchableOpacity>}
-
-      <Text style={styles.libraryLabel}>BINDER LIBRARY</Text>
-      {regularBinders.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No binders yet</Text>
-          <Text style={styles.emptyText}>Create a binder once you want to organize your sets.</Text>
+        <View style={s.summary}>
+          <Stat
+            label="ACTIVE BINDERS"
+            value={String(regular.length + (flex ? 1 : 0))}
+          />
+          <Stat
+            label="COMPLETION"
+            value={total ? `${Math.round((completed / total) * 100)}%` : "0%"}
+          />
         </View>
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.row}
-          style={{ marginTop: 28 }}
-          snapToInterval={BINDER_WIDTH + CARD_GAP}
-          decelerationRate="fast"
-        >
-          {regularBinders.map((b) => {
-            const set = getSetById(b.setId);
-            const cards = b.kind === 'freeform' ? (b.slots || []).map((slot) => slot?.card).filter(Boolean) : getSetRequirements(set, b.tier);
-            const owned = cards.filter((card) => isOwned(collectionQuantities, card)).length;
-            const percent = cards.length ? Math.round((owned / cards.length) * 100) : 0;
-            return (
+        <Text style={s.section}>
+          ACTIVE PORTFOLIOS ({regular.length + (flex ? 1 : 0)})
+        </Text>
+        <View style={s.grid}>
+          {flex ? (
+            <TouchableOpacity
+              style={s.card}
+              onPress={() => navigate("FlexBinderPage", { binderId: flex.id })}
+            >
+              <FlexBinderBook binder={flex} width={W - 24} />
+              <Text style={s.cardName} numberOfLines={1}>
+                {flex.title || flex.name}
+              </Text>
+              <Text style={s.progress}>
+                {(flex.slots || []).filter((x) => x?.card).length} / 9 Cards
+              </Text>
+              <Text style={s.meta}>FLEX SHOWCASE</Text>
+            </TouchableOpacity>
+          ) : null}
+          {stats.map(({ b, set, cards, owned, p }) => (
             <TouchableOpacity
               key={b.id}
-              style={styles.binderCard}
-              onPress={() => navigate('BinderDetail', { binderId: b.id })}
+              style={s.card}
+              onPress={() => navigate("BinderDetail", { binderId: b.id })}
             >
-              <BinderBook set={set} binder={b} width={BINDER_WIDTH} />
-              <View style={styles.binderInfoRow}>
-                <View style={styles.binderInfo}><Text style={styles.binderName} numberOfLines={1}>{b.name}</Text><Text style={styles.binderSubtitle}>{b.tier.toUpperCase()} · {owned}/{cards.length} CARDS</Text></View>
-                <Text style={styles.binderPercent}>{percent}%</Text>
-              </View>
-              <View style={styles.progressWrap}>
-                <ProgressBar percent={percent} height={2} />
-              </View>
+              <BinderBook set={set} binder={b} width={W - 24} />
+              <Text style={s.cardName} numberOfLines={1}>
+                {b.name}
+              </Text>
+              <Text style={s.progress}>
+                {owned} / {cards.length} Cards
+              </Text>
+              <Text style={s.meta}>{p}% COMPLETE</Text>
             </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
-    </ScrollView>
+          ))}
+        </View>
+        {!regular.length && !flex ? (
+          <View style={s.empty}>
+            <Text style={s.emptyTitle}>No registries yet</Text>
+            <Text style={s.emptyText}>
+              Create a binder to organize your collection.
+            </Text>
+          </View>
+        ) : null}
+      </ScrollView>
+      <TouchableOpacity
+        style={s.fab}
+        onPress={() => navigate("CoverDesigner", { mode: "create" })}
+      >
+        <Ionicons name="add" size={18} color={colors.bg} />
+        <Text style={s.fabText}>Create Binder</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  titleRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    paddingHorizontal: 24, paddingTop: 24,
+function Stat({ label, value }) {
+  return (
+    <View style={s.stat}>
+      <Text style={s.statLabel}>{label}</Text>
+      <Text style={s.statValue}>{value}</Text>
+    </View>
+  );
+}
+const s = StyleSheet.create({
+  page: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: 24, paddingBottom: 110 },
+  head: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  eyebrow: { color: colors.textTertiary, fontSize: 8, fontWeight: '700', letterSpacing: 1.3 },
-  title: { color: colors.text, fontSize: 29, fontWeight: '700', marginTop: 4 },
-  count: { color: colors.textSecondary, fontSize: 10, marginTop: 3 },
-  addBtn: {
-    width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.purple,
-    justifyContent: 'center', alignItems: 'center', marginTop: 6,
+  title: { color: colors.text, fontSize: 24, fontWeight: "800" },
+  kicker: {
+    color: colors.purple,
+    fontSize: 9,
+    fontWeight: "700",
+    marginTop: 3,
   },
-  addPlus: { color: colors.text, fontSize: 22, fontWeight: '300' },
-  row: { paddingHorizontal: 24, paddingBottom: 42 },
-  binderCard: { width: BINDER_WIDTH, marginRight: CARD_GAP },
-  binderInfoRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 14 },
-  binderInfo: { flex: 1, paddingRight: 12 },
-  binderName: { color: colors.text, fontSize: 22, fontWeight: '500' },
-  binderSubtitle: { color: colors.textSecondary, fontSize: 10, fontWeight: '600', letterSpacing: 1.1, marginTop: 5 },
-  binderPercent: { color: colors.text, fontSize: 20, fontWeight: '300' },
-  progressWrap: { marginTop: 10, width: '100%' },
-  emptyState: {
-    marginTop: 28,
-    marginHorizontal: 24,
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    borderColor: colors.purple,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { color: colors.text, fontSize: 10, fontWeight: "800" },
+  summary: { flexDirection: "row", gap: 16, marginTop: 28 },
+  stat: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+  },
+  statLabel: { color: colors.textSecondary, fontSize: 9 },
+  statValue: {
+    color: colors.purple,
+    fontSize: 18,
+    fontWeight: "800",
+    marginTop: 5,
+  },
+  section: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 26,
+    marginBottom: 16,
+  },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
+  card: {
+    width: W,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
+    padding: 12,
+    alignItems: "center",
   },
-  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '500' },
-  emptyText: { color: colors.textSecondary, fontSize: 12, marginTop: 8, textAlign: 'center' },
-  showcaseHeader: { marginHorizontal: 24, marginTop: 34, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  showcaseLabel: { color: colors.textTertiary, fontSize: 9, fontWeight: '700', letterSpacing: 1.8 }, editFlex: { color: colors.purple, fontSize: 10, fontWeight: '700' },
-  showcase: { marginHorizontal: 24 }, flexBookWrap: { alignItems: 'center', paddingTop: 4 }, showcaseCopy: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14 }, showcaseName: { color: colors.text, fontSize: 20, fontWeight: '500', maxWidth: 210 }, showcaseMeta: { color: colors.textSecondary, fontSize: 8, letterSpacing: 1, marginTop: 4 }, openFlex: { color: colors.purple, fontSize: 9, fontWeight: '700', paddingBottom: 2 },
-  createFlex: { marginHorizontal: 24, borderWidth: 1, borderColor: colors.purple, backgroundColor: colors.purpleSoft, borderRadius: 16, padding: 20 }, createFlexTitle: { color: colors.text, fontSize: 17, fontWeight: '600' }, createFlexText: { color: colors.textSecondary, fontSize: 10, marginTop: 6 },
-  libraryLabel: { color: colors.textTertiary, fontSize: 9, fontWeight: '700', letterSpacing: 1.8, marginHorizontal: 24, marginTop: 38 },
+  cardName: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 8,
+    width: "100%",
+    textAlign: "center",
+  },
+  progress: { color: colors.purple, fontSize: 9, marginTop: 3 },
+  meta: { color: colors.textSecondary, fontSize: 9, marginTop: 3 },
+  empty: {
+    padding: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: "700" },
+  emptyText: { color: colors.textSecondary, fontSize: 10, marginTop: 6 },
+  fab: {
+    position: "absolute",
+    right: 24,
+    bottom: 18,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.purple,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 18,
+  },
+  fabText: { color: colors.bg, fontSize: 11, fontWeight: "800" },
 });

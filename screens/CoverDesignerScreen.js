@@ -1,147 +1,287 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { colors, type } from '../theme';
-import TopBar from '../components/TopBar';
-import FilterChip from '../components/FilterChip';
-import BinderCover from '../components/BinderCover';
-import { SETS, getSetById } from '../data';
-
-const { width } = Dimensions.get('window');
-const STYLE_GAP = 12;
-const STYLE_WIDTH = (width - 48 - STYLE_GAP) / 2;
-const COVER_STYLES = [
-  { id: 'classic', name: 'Black' }, { id: 'artwork', name: 'Contour' },
-  { id: 'marble', name: 'Vortex' }, { id: 'minimal', name: 'Poké Ball' },
-  { id: 'line', name: 'Marble' }, { id: 'energy', name: 'Card Back' },
+import React, { useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Switch,
+} from "react-native";
+import { colors } from "../theme";
+import RegistryHeader from "../components/RegistryHeader";
+import BinderCover from "../components/BinderCover";
+import FilterChip from "../components/FilterChip";
+import { SETS, getSetById } from "../data";
+const STYLES = [
+  ["classic", "Geometric"],
+  ["artwork", "Foil Sparkle"],
+  ["line", "Cosmic Waves"],
+  ["minimal", "Minimalist"],
+  ["marble", "Marble"],
+  ["energy", "Card Back"],
 ];
-const TIERS = ['complete', 'master', 'grandmaster'];
-const POCKET_LAYOUTS = [9, 16, 24];
-
-export default function CoverDesignerScreen({ goBack, params = {}, createBinder = () => {}, updateBinder = () => {}, binders = [] }) {
-  const editingBinder = binders.find((binder) => binder.id === params.binderId);
-  const initialSet = getSetById(editingBinder?.setId || params.setId || 'me5');
-  const [setId, setSetId] = useState(initialSet.id);
-  const [tier, setTier] = useState(String(editingBinder?.tier || params.tier || 'master').toLowerCase());
-  const [selectedStyle, setSelectedStyle] = useState(editingBinder?.coverStyle || 'classic');
-  const [name, setName] = useState(editingBinder?.name || initialSet.name);
-  const [pocketLayout, setPocketLayout] = useState(Number(editingBinder?.pocketLayout || 9));
-  const [kind, setKind] = useState(editingBinder?.kind || 'set');
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState('');
+const TIERS = ["complete", "master", "grandmaster"];
+export default function CoverDesignerScreen({
+  navigate,
+  goBack,
+  params = {},
+  createBinder = () => {},
+  updateBinder = () => {},
+  binders = [],
+}) {
+  const editing = binders.find((b) => b.id === params.binderId);
+  const initial = getSetById(editing?.setId || params.setId || "me5");
+  const [setId, setSetId] = useState(initial.id);
+  const [tier, setTier] = useState(
+    String(editing?.tier || params.tier || "master").toLowerCase(),
+  );
+  const [style, setStyle] = useState(editing?.coverStyle || "classic");
+  const [name, setName] = useState(editing?.name || initial.name);
+  const [layout, setLayout] = useState(Number(editing?.pocketLayout || 9));
+  const [kind, setKind] = useState(editing?.kind || "set");
+  const [customText, setCustomText] = useState(true);
+  const [picker, setPicker] = useState(false);
+  const [query, setQuery] = useState("");
   const set = getSetById(setId);
-  const availableTiers = TIERS.filter((item) => item !== 'grandmaster' || set.grandmasterAvailable);
-  const cards = tier === 'grandmaster' ? set.grandmasterCards : tier === 'complete' ? set.completeCards : set.masterCards;
-  const pageCapacity = pocketLayout === 24 ? 12 : pocketLayout;
-  const filteredSets = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return SETS.slice(0, 12);
-    return SETS.filter((item) => `${item.name} ${item.code}`.toLowerCase().includes(normalized)).slice(0, 30);
-  }, [query]);
-
-  const selectSet = (nextSet) => {
-    setSetId(nextSet.id);
-    setName(nextSet.name);
-    setSearchOpen(false);
-    setQuery('');
+  const filtered = useMemo(
+    () =>
+      SETS.filter((x) =>
+        x.name.toLowerCase().includes(query.toLowerCase()),
+      ).slice(0, 16),
+    [query],
+  );
+  const selectSet = (x) => {
+    setSetId(x.id);
+    setName(x.name);
+    setPicker(false);
   };
   const save = () => {
-    const changes = { setId: set.id, name: name.trim() || set.name, tier, coverStyle: selectedStyle, pocketLayout, kind, slots: editingBinder?.slots || [] };
-    if (editingBinder) updateBinder(editingBinder.id, changes);
-    else createBinder({ ...changes, createdAt: new Date().toISOString(), sortBy: 'Set Number' });
+    const changes = {
+      setId: set.id,
+      name: name.trim() || set.name,
+      tier,
+      coverStyle: style,
+      pocketLayout: layout,
+      kind,
+      slots: editing?.slots || [],
+    };
+    editing
+      ? updateBinder(editing.id, changes)
+      : createBinder({
+          ...changes,
+          createdAt: new Date().toISOString(),
+          sortBy: "Set Number",
+        });
     goBack();
   };
-
   return (
-    <View style={styles.container}>
-      <TopBar variant="back" onBackPress={goBack} onSearchPress={() => navigate('Search')} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.headingRow}>
-          <View><Text style={styles.title}>Design your cover</Text><Text style={styles.subtitle}>Pick a style</Text></View>
-          <TouchableOpacity style={styles.searchButton} onPress={() => setSearchOpen((value) => !value)}><Text style={styles.searchIcon}>⌕</Text></TouchableOpacity>
-        </View>
-
-        {searchOpen ? (
-          <View style={styles.setPicker}>
-            <TextInput autoFocus value={query} onChangeText={setQuery} placeholder="Search a Pokémon set…" placeholderTextColor={colors.textTertiary} style={styles.searchInput} />
-            {filteredSets.map((item) => (
-              <TouchableOpacity key={item.id} style={[styles.setRow, item.id === set.id && styles.setRowActive]} onPress={() => selectSet(item)}>
-                <Text style={styles.setName}>{item.name}</Text><Text style={styles.setCode}>{item.code}</Text>
+    <View style={s.page}>
+      <RegistryHeader
+        title="Cover Designer"
+        eyebrow="CUSTOMIZE PORTFOLIO ART"
+        onBack={goBack}
+        onSearch={() => setPicker((v) => !v)}
+      />
+      <ScrollView
+        contentContainerStyle={s.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {picker ? (
+          <View style={s.picker}>
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              autoFocus
+              placeholder="Search sets…"
+              placeholderTextColor={colors.textTertiary}
+              style={s.search}
+            />
+            {filtered.map((x) => (
+              <TouchableOpacity
+                key={x.id}
+                style={s.setRow}
+                onPress={() => selectSet(x)}
+              >
+                <Text style={s.setName}>{x.name}</Text>
+                <Text style={s.setCode}>{x.code}</Text>
               </TouchableOpacity>
             ))}
           </View>
-        ) : (
-          <TouchableOpacity style={styles.currentSet} onPress={() => setSearchOpen(true)}>
-            <View><Text style={styles.controlLabel}>POKÉMON SET</Text><Text style={styles.currentSetName}>{set.name}</Text></View><Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        )}
-
-        <Text style={styles.controlLabel}>GOAL</Text>
-        <View style={styles.tierRow}>{availableTiers.map((item) => <FilterChip key={item} label={item.toUpperCase()} active={tier === item} onPress={() => setTier(item)} />)}</View>
-
-        <Text style={styles.controlLabel}>BINDER TYPE</Text>
-        <View style={styles.tierRow}>
-          <FilterChip label="SET CHECKLIST" active={kind === 'set'} onPress={() => setKind('set')} />
-          <FilterChip label="FREEFORM" active={kind === 'freeform'} onPress={() => setKind('freeform')} />
+        ) : null}
+        <View style={s.preview}>
+          <BinderCover
+            set={set}
+            styleId={style}
+            name={customText ? name : ""}
+            compact
+          />
         </View>
-
-        <Text style={styles.controlLabel}>BINDER FORMAT</Text>
-        <View style={styles.tierRow}>{POCKET_LAYOUTS.map((item) => <FilterChip key={item} label={`${item}-POCKET`} active={pocketLayout === item} onPress={() => setPocketLayout(item)} />)}</View>
-
-        <View style={styles.styleGrid}>
-          {COVER_STYLES.map((item, index) => (
-            <TouchableOpacity key={item.id} style={[styles.styleCard, selectedStyle === item.id && styles.styleCardActive]} onPress={() => setSelectedStyle(item.id)} activeOpacity={0.85}>
-              <BinderCover set={set} styleId={item.id} compact />
-              {selectedStyle === item.id ? <View style={styles.check}><Text style={styles.checkText}>✓</Text></View> : null}
-              <Text style={[styles.styleNumber, selectedStyle === item.id && styles.styleNumberActive]}>{String(index + 1).padStart(2, '0')}</Text>
-              <Text style={styles.styleName}>{item.name}</Text>
+        {editing ? null : (
+          <>
+            <Text style={s.label}>BINDER CONFIGURATION</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              style={s.nameInput}
+            />
+            <View style={s.chips}>
+              {TIERS.filter(
+                (x) => x !== "grandmaster" || set.grandmasterAvailable,
+              ).map((x) => (
+                <FilterChip
+                  key={x}
+                  label={x.toUpperCase()}
+                  active={tier === x}
+                  onPress={() => setTier(x)}
+                />
+              ))}
+            </View>
+            <View style={s.chips}>
+              <FilterChip
+                label="SET"
+                active={kind === "set"}
+                onPress={() => setKind("set")}
+              />
+              <FilterChip
+                label="FREEFORM"
+                active={kind === "freeform"}
+                onPress={() => setKind("freeform")}
+              />
+              {[9, 16, 24].map((x) => (
+                <FilterChip
+                  key={x}
+                  label={`${x}P`}
+                  active={layout === x}
+                  onPress={() => setLayout(x)}
+                />
+              ))}
+            </View>
+          </>
+        )}
+        <Text style={s.label}>BASE PALETTE & GRADIENTS</Text>
+        <View style={s.palette}>
+          {["#D6B42C", "#315BC5", "#08785F", "#B9252B", "#3B4658"].map(
+            (c, i) => (
+              <TouchableOpacity
+                key={c}
+                style={[s.dot, { backgroundColor: c }, i === 0 && s.dotActive]}
+                onPress={() => setStyle(STYLES[i]?.[0] || style)}
+              />
+            ),
+          )}
+        </View>
+        <Text style={s.label}>METALLIC GEOMETRIC PATTERNS</Text>
+        <View style={s.patterns}>
+          {STYLES.slice(0, 4).map(([id, label]) => (
+            <TouchableOpacity
+              key={id}
+              style={[s.pattern, style === id && s.patternActive]}
+              onPress={() => setStyle(id)}
+            >
+              <Text
+                style={[s.patternText, style === id && s.patternTextActive]}
+              >
+                {label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
-
-        <View style={styles.previewSection}>
-          <Text style={type.label}>PREVIEW</Text>
-          <View style={styles.previewRow}>
-            <View style={styles.previewCover}><BinderCover set={set} styleId={selectedStyle} name={name} compact /></View>
-            <View style={styles.previewInfo}>
-              <TextInput value={name} onChangeText={setName} style={styles.nameInput} placeholder="Binder name" placeholderTextColor={colors.textTertiary} />
-              <Text style={styles.previewSubtitle}>{tier.charAt(0).toUpperCase() + tier.slice(1)} Set Binder</Text>
-              <Text style={styles.previewCount}>{kind === 'freeform' ? 'Manual card arrangement' : `${cards.length} cards`}</Text>
-              <Text style={styles.previewCount}>{pocketLayout === 24 ? '3 × 4 pages · 24 cards open' : pocketLayout === 16 ? '4 × 4 pages · 32 cards open' : '3 × 3 pages · 18 cards open'}</Text>
-              <Text style={styles.previewCount}>{Math.ceil(cards.length / pageCapacity)} single pages</Text>
-              <Text style={styles.editHint}>Tap the name to edit</Text>
-            </View>
-          </View>
+        <Text style={s.label}>TEXT EMBOSS OVERLAYS</Text>
+        <View style={s.switchRow}>
+          <Text style={s.switchText}>Include Custom Title Text</Text>
+          <Switch
+            value={customText}
+            onValueChange={setCustomText}
+            trackColor={{ false: colors.border, true: colors.purple }}
+            thumbColor={colors.bg}
+          />
         </View>
-
-        <TouchableOpacity style={styles.saveButton} onPress={save}><Text style={styles.saveText}>{editingBinder ? 'Save Cover' : 'Save Binder'}</Text></TouchableOpacity>
       </ScrollView>
+      <TouchableOpacity style={s.save} onPress={save}>
+        <Text style={s.saveText}>
+          {editing ? "Apply Portfolio Cover" : "Create Binder"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: 24, paddingBottom: 38 },
-  headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 16 },
-  title: { color: colors.text, fontSize: 36, fontWeight: '300' }, subtitle: { color: colors.textSecondary, fontSize: 18, marginTop: 4 },
-  searchButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }, searchIcon: { color: colors.text, fontSize: 18 },
-  controlLabel: { color: colors.textTertiary, fontSize: 10, fontWeight: '700', letterSpacing: 1.4, marginTop: 22 },
-  currentSet: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 12 },
-  currentSetName: { color: colors.text, fontSize: 16, marginTop: 5 }, chevron: { color: colors.textSecondary, fontSize: 22 },
-  tierRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 },
-  setPicker: { marginTop: 18, borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 12, maxHeight: 360 },
-  searchInput: { color: colors.text, backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 6 },
-  setRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 8, borderRadius: 8 }, setRowActive: { backgroundColor: colors.purpleSoft },
-  setName: { color: colors.text, fontSize: 13, flex: 1 }, setCode: { color: colors.textTertiary, fontSize: 11, marginLeft: 8 },
-  styleGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 14 },
-  styleCard: { width: STYLE_WIDTH, borderWidth: 1, borderColor: colors.borderStrong, borderRadius: 12, padding: 6, marginBottom: STYLE_GAP },
-  styleCardActive: { borderColor: colors.purple, borderWidth: 2, padding: 5 },
-  styleNumber: { color: colors.textTertiary, fontSize: 11, marginTop: 7, marginLeft: 3 }, styleNumberActive: { color: colors.purple },
-  styleName: { color: colors.text, fontSize: 14, margin: 3, marginTop: 2 },
-  check: { position: 'absolute', top: 12, right: 12, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.purple, alignItems: 'center', justifyContent: 'center' }, checkText: { color: colors.text, fontSize: 12, fontWeight: '700' },
-  previewSection: { borderTopWidth: 1, borderTopColor: colors.border, marginHorizontal: -24, paddingHorizontal: 24, marginTop: 10, paddingTop: 2 },
-  previewRow: { flexDirection: 'row', alignItems: 'center', marginTop: 18 }, previewCover: { width: 112 }, previewInfo: { flex: 1, marginLeft: 22 },
-  nameInput: { color: colors.text, fontSize: 23, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 5 },
-  previewSubtitle: { color: colors.textSecondary, fontSize: 14, marginTop: 10 }, previewCount: { color: colors.textSecondary, fontSize: 13, marginTop: 6 }, editHint: { color: colors.purple, fontSize: 12, marginTop: 14 },
-  saveButton: { backgroundColor: colors.purple, borderRadius: 28, paddingVertical: 16, alignItems: 'center', marginTop: 28 }, saveText: { color: colors.text, fontSize: 15, fontWeight: '700' },
+const s = StyleSheet.create({
+  page: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
+  content: { paddingBottom: 100 },
+  preview: {
+    width: 200,
+    height: 270,
+    alignSelf: "center",
+    marginTop: 16,
+    overflow: "hidden",
+  },
+  label: {
+    color: colors.textSecondary,
+    fontSize: 9,
+    fontWeight: "700",
+    marginTop: 18,
+    marginBottom: 9,
+  },
+  nameInput: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.card,
+    color: colors.text,
+    paddingHorizontal: 11,
+  },
+  chips: { flexDirection: "row", flexWrap: "wrap", marginTop: 8 },
+  palette: { flexDirection: "row", gap: 12 },
+  dot: { width: 38, height: 38, borderRadius: 19 },
+  dotActive: { borderWidth: 2, borderColor: colors.text },
+  patterns: { flexDirection: "row", gap: 8 },
+  pattern: {
+    paddingHorizontal: 11,
+    paddingVertical: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.card,
+  },
+  patternActive: { borderColor: colors.purple },
+  patternText: { color: colors.textSecondary, fontSize: 8 },
+  patternTextActive: { color: colors.purple },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  switchText: { color: colors.text, fontSize: 10 },
+  save: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    bottom: 13,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: colors.purple,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveText: { color: colors.bg, fontSize: 11, fontWeight: "800" },
+  picker: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 9,
+    maxHeight: 260,
+  },
+  search: {
+    height: 38,
+    backgroundColor: colors.card,
+    borderRadius: 7,
+    color: colors.text,
+    paddingHorizontal: 10,
+  },
+  setRow: { flexDirection: "row", justifyContent: "space-between", padding: 9 },
+  setName: { color: colors.text, fontSize: 9 },
+  setCode: { color: colors.textTertiary, fontSize: 8 },
 });
