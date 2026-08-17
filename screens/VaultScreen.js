@@ -8,7 +8,6 @@ import {
   View,
 } from "react-native";
 import { colors } from "../theme";
-import TopBar from "../components/TopBar";
 import EmptyState from "../components/EmptyState";
 import { CARD_LIBRARY } from "../data";
 import { calculateVaultPortfolio, formatMoney } from "../lib/valueEngine";
@@ -46,13 +45,9 @@ export default function VaultScreen({
   const insights = calculateVaultInsights(portfolio, wishlistItems);
   return (
     <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
-      <TopBar
-        variant="title"
-        onMenuPress={() => navigate("Menu")}
-        onAvatarPress={() => navigate("Profile")}
-      />
       <View style={s.head}>
-        <Text style={s.label}>VAULT</Text>
+        <Text style={s.label}>PORTFOLIO VAULT</Text>
+        <Text style={s.title}>Your assets</Text>
         <Text style={s.value}>
           {formatMoney(portfolio.totalValue, currency)}
         </Text>
@@ -223,13 +218,14 @@ export default function VaultScreen({
 }
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  head: { paddingHorizontal: 24, marginTop: 24 },
+  head: { paddingHorizontal: 24, paddingTop: 24 },
   label: {
     color: colors.textTertiary,
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 2,
   },
+  title: { color: colors.text, fontSize: 29, fontWeight: "700", marginTop: 4 },
   value: { color: colors.text, fontSize: 48, fontWeight: "300", marginTop: 12 },
   sub: { color: colors.textSecondary, fontSize: 12, marginTop: 3 },
   breakdown: {

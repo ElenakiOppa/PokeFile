@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { colors, type } from '../theme';
-import TopBar from '../components/TopBar';
+import { colors } from '../theme';
 import ProgressBar from '../components/ProgressBar';
 import { getSetById } from '../data';
 import { getSetRequirements, isOwned } from '../lib/collectibles';
@@ -19,12 +18,11 @@ export default function BindersScreen({ navigate, binders = [], collectionQuanti
   const flexFilled = (primaryFlex?.slots || []).filter((slot) => slot?.card).length;
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <TopBar variant="title" onMenuPress={() => navigate('Menu')} onAvatarPress={() => navigate('Profile')} />
-
       <View style={styles.titleRow}>
         <View>
-          <Text style={type.label}>BINDERS</Text>
-          <Text style={type.hugeNumber}>{String(regularBinders.length).padStart(2, '0')}</Text>
+          <Text style={styles.eyebrow}>YOUR LIBRARY</Text>
+          <Text style={styles.title}>Binders</Text>
+          <Text style={styles.count}>{regularBinders.length} set binders</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => navigate('CoverDesigner', { mode: 'create' })}><Text style={styles.addPlus}>+</Text></TouchableOpacity>
       </View>
@@ -82,10 +80,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   titleRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    paddingHorizontal: 24, marginTop: 20,
+    paddingHorizontal: 24, paddingTop: 24,
   },
+  eyebrow: { color: colors.textTertiary, fontSize: 8, fontWeight: '700', letterSpacing: 1.3 },
+  title: { color: colors.text, fontSize: 29, fontWeight: '700', marginTop: 4 },
+  count: { color: colors.textSecondary, fontSize: 10, marginTop: 3 },
   addBtn: {
-    width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.borderStrong,
+    width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.purple,
     justifyContent: 'center', alignItems: 'center', marginTop: 6,
   },
   addPlus: { color: colors.text, fontSize: 22, fontWeight: '300' },
