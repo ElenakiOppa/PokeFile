@@ -1,34 +1,180 @@
-import React from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../theme";
 
-const CARD_BACK = require("../assets/covers/templates/card-back.png");
-const CARD_POSITIONS = [
-  { left: 31, top: 80, rotate: "-34deg" },
-  { left: 72, top: 44, rotate: "-8deg" },
-  { left: 116, top: 20, rotate: "2deg" },
-  { right: 61, top: 52, rotate: "31deg" },
-  { right: 21, top: 102, rotate: "10deg" },
-  { left: 32, top: 139, rotate: "-18deg" },
-  { left: 112, top: 150, rotate: "-4deg" },
-];
-
 export default function SplashScreen() {
-  return <SafeAreaView style={s.screen} edges={["top","bottom"]}>
-    <View style={s.center}>
-      <View style={s.composition}>
-        <View style={s.ambient}/>
-        {CARD_POSITIONS.map(({rotate,...layout},index)=><Image key={index} source={CARD_BACK} resizeMode="cover" style={[s.card,layout,{transform:[{rotate}]}]}/>)}
-        <View style={s.markShadow}/>
-        <View style={s.mark}><View style={s.band}/><View style={s.ring}/></View>
-        <View style={s.wordmark}><Text style={s.poke}>POKÉ<Text style={s.file}>FILE</Text></Text><View style={s.rule}/><Text style={s.japanese}>ポケファイル</Text><Text style={s.tagline}>PREMIUM REGISTRY INDEX</Text></View>
+  const [progress, setProgress] = useState(0);
+  const fill = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.timing(fill, {
+      toValue: 1,
+      duration: 5000,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    });
+
+    const listener = fill.addListener(({ value }) => {
+      setProgress(Math.round(value * 100));
+    });
+
+    animation.start();
+
+    return () => {
+      fill.removeListener(listener);
+      fill.stopAnimation();
+    };
+  }, [fill]);
+
+  const fillWidth = fill.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
+
+  return (
+    <SafeAreaView style={s.screen} edges={["top", "bottom"]}>
+      <View style={s.content}>
+        <View style={s.logoWrap}>
+          <View style={s.mark}>
+            <View style={s.band} />
+            <View style={s.ring} />
+          </View>
+          <Text style={s.poke}>
+            POKÉ<Text style={s.file}>FILE</Text>
+          </Text>
+        </View>
+
+        <View style={s.loaderCard}>
+          <View style={s.loaderHeader}>
+            <Text style={s.status}>LOADING REGISTRY</Text>
+            <Text style={s.percent}>{progress}%</Text>
+          </View>
+
+          <View style={s.track}>
+            <Animated.View style={[s.fill, { width: fillWidth }]} />
+          </View>
+
+          <Text style={s.note}>INITIALIZING COLLECTIONS • SECURE INDEX</Text>
+        </View>
       </View>
-    </View>
-    <View style={s.footer}><ActivityIndicator color={colors.purple} size="small" style={s.loader}/><Text style={s.version}>VERSION 1.4.2 · SECURED INDEX</Text></View>
-  </SafeAreaView>;
+
+      <Text style={s.version}>VERSION 1.4.2</Text>
+    </SafeAreaView>
+  );
 }
 
-const s=StyleSheet.create({
-  screen:{flex:1,backgroundColor:"#080808"},center:{flex:1,alignItems:"center",justifyContent:"center"},composition:{width:320,height:340,alignItems:"center"},ambient:{position:"absolute",left:42,right:42,top:42,bottom:42,borderRadius:150,backgroundColor:colors.purple,opacity:.035,shadowColor:colors.purple,shadowOpacity:.5,shadowRadius:75,shadowOffset:{width:0,height:0}},card:{position:"absolute",width:82,height:114,borderRadius:7,borderWidth:1,borderColor:colors.purple,opacity:.26,tintColor:"#8c611c"},markShadow:{position:"absolute",top:84,width:122,height:122,borderRadius:61,backgroundColor:colors.purple,opacity:.08,shadowColor:colors.purple,shadowOpacity:.8,shadowRadius:46,shadowOffset:{width:0,height:0}},mark:{position:"absolute",top:92,width:88,height:88,borderRadius:44,overflow:"hidden",alignItems:"center",justifyContent:"center",backgroundColor:colors.purple},band:{position:"absolute",left:0,right:0,top:39,height:10,backgroundColor:"#080808"},ring:{width:28,height:28,borderRadius:14,borderWidth:4,borderColor:"#080808",backgroundColor:colors.purple},wordmark:{position:"absolute",top:206,alignItems:"center"},poke:{color:"#f4f4f5",fontFamily:"Manrope_800ExtraBold",fontSize:35,letterSpacing:-1.1},file:{fontFamily:"Manrope_300Light",letterSpacing:-1.6},rule:{position:"absolute",left:2,top:44,width:82,height:2,backgroundColor:"#f4f4f5"},japanese:{position:"absolute",right:0,top:40,color:"#f4f4f5",fontSize:7,letterSpacing:.5},tagline:{color:colors.purple,fontFamily:"Manrope_500Medium",fontSize:9,letterSpacing:.25,marginTop:0},footer:{height:72,paddingBottom:10,alignItems:"center",justifyContent:"flex-end"},loader:{marginBottom:7,transform:[{scale:.65}]},version:{color:"#606067",fontFamily:"Manrope_400Regular",fontSize:8,letterSpacing:.2}
+const s = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#07080a",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  content: {
+    width: "100%",
+    maxWidth: 360,
+    alignItems: "center",
+  },
+  logoWrap: {
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  mark: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: colors.purple,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+    shadowColor: colors.purple,
+    shadowOpacity: 0.55,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  band: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 40,
+    height: 12,
+    backgroundColor: "#07080a",
+  },
+  ring: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 4,
+    borderColor: "#07080a",
+    backgroundColor: colors.purple,
+  },
+  poke: {
+    color: "#f5f5f7",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 34,
+    letterSpacing: -1,
+  },
+  file: {
+    fontFamily: "Manrope_300Light",
+    letterSpacing: -1.2,
+  },
+  loaderCard: {
+    width: "100%",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.02)",
+    padding: 18,
+  },
+  loaderHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  status: {
+    color: "#f5f5f7",
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 11,
+    letterSpacing: 1.6,
+    opacity: 0.9,
+  },
+  percent: {
+    color: colors.purple,
+    fontFamily: "Manrope_700Bold",
+    fontSize: 11,
+    letterSpacing: 1.2,
+  },
+  track: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
+  },
+  fill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: colors.purple,
+    shadowColor: colors.purple,
+    shadowOpacity: 0.8,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  note: {
+    marginTop: 12,
+    color: "rgba(255,255,255,0.55)",
+    fontFamily: "Manrope_400Regular",
+    fontSize: 9,
+    letterSpacing: 1.2,
+    textAlign: "center",
+  },
+  version: {
+    marginTop: 28,
+    color: "rgba(255,255,255,0.46)",
+    fontFamily: "Manrope_400Regular",
+    fontSize: 9,
+    letterSpacing: 1.4,
+  },
 });

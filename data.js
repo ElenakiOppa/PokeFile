@@ -2,6 +2,7 @@ import setsData from "./data/scrydex/sets.json";
 import pitchBlackGrandmaster from "./data/curated/pitch-black-grandmaster.json";
 import pitchBlackTcgdex from "./data/providers/tcgdex/me05.json";
 import chaosRisingTcgdex from "./data/providers/tcgdex/me04.json";
+import ascendedHeroesTcgdex from "./data/providers/tcgdex/me02.5.json";
 import pokecottageGuides from "./data/providers/pokecottage/set-guides.json";
 import { buildCuratedSetRequirements } from "./lib/setRequirements";
 import { buildPokecottageRequirements } from "./lib/providers/pokecottageProvider";
@@ -12,11 +13,11 @@ const slugKey = (value) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 const pokecottageCuratedSet = (set, guide) => {
-  if (!guide || set.id !== "me4") return null;
+  if (!guide) return null;
   const canonicalExpansionPrintings = Object.fromEntries(
-    ["13", "29", "51", "68", "85"].map((number) => [
-      `me4-${number}`,
-      "holofoil",
+    Object.entries(guide.canonicalExpansionPrintings || {}).map(([cardId, finish]) => [
+      String(cardId),
+      String(finish),
     ]),
   );
   const records = guide.records
@@ -526,6 +527,60 @@ const pocketExpansionSetsData = rawSets.filter(
   (set) => detectSetCategory(set) === "Pocket Expansion",
 );
 
+const normalizeCollectibleSegment = (value, fallback = "normal") => {
+  const text = String(value ?? fallback)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return text || fallback;
+};
+
+export const makeCollectibleKey = ({
+  setId,
+  cardNumber,
+  variantType,
+  foil,
+  sourceVariantId,
+}) => {
+  const baseSetId = String(setId || "").trim();
+  const number = String(cardNumber ?? "").trim().replace(/^0+/, "") || "0";
+  const variant = normalizeCollectibleSegment(variantType || foil || "normal", "normal");
+  const foilSuffix = normalizeCollectibleSegment(foil || "", "");
+  const source = normalizeCollectibleSegment(sourceVariantId || "", "");
+
+  if (!baseSetId || !number) return `${variant}-${foilSuffix || source || "default"}`;
+
+  const physicalVariant = foilSuffix ? `${variant}-${foilSuffix}` : variant;
+  return source && source !== physicalVariant
+    ? `${baseSetId}-${number}:${physicalVariant}-${source}`
+    : `${baseSetId}-${number}:${physicalVariant}`;
+};
+
+const resolveCardImage = (card, fallbackSet = null) => {
+  const candidates = [
+    card?.image,
+    card?.art,
+    card?.imageUrl,
+    card?.sourceImage,
+    card?.providerImage,
+    card?.images?.large,
+    card?.images?.small,
+    card?.images?.medium,
+    card?.images?.hires,
+  ];
+  const resolved = candidates.find((value) => {
+    if (typeof value !== "string") return false;
+    const trimmed = value.trim();
+    return trimmed.length > 0 && !/^\s*null\s*$/i.test(trimmed) && !/^\s*undefined\s*$/i.test(trimmed);
+  });
+  if (resolved && typeof resolved === "string") return resolved.trim();
+  if (fallbackSet && typeof fallbackSet.logo === "string" && fallbackSet.logo.trim()) {
+    return fallbackSet.logo.trim();
+  }
+  return null;
+};
+
 const makeVariantList = (card, set) => {
   const sourceVariants =
     Array.isArray(card.variants) && card.variants.length
@@ -539,10 +594,98 @@ const makeVariantList = (card, set) => {
     setName: set.name,
     label: String(entry.label || entry.variant || card.variant || "Normal"),
     number: String(entry.number || card.number || ""),
-    image: String(entry.image || card.image || set.logo),
+    image: resolveCardImage({ ...card, ...entry }, set) || set.logo || "",
     variant: String(entry.variant || card.variant || "Normal"),
     rarity: String(entry.rarity || card.rarity || "Unknown"),
   }));
+};
+
+const buildTcgdexRuntimeCard = (set, card, index = 0) => {
+  const number = formatCardNumber(card.localId ?? card.number ?? `${index + 1}`);
+  const baseId = `${set.id}-${number}`;
+  const variantsDetailed = Array.isArray(card.variants_detailed)
+    ? card.variants_detailed
+    : [];
+  const variantRecords = variantsDetailed.length
+    ? variantsDetailed.map((variant) => {
+        const type = String(variant?.type || "normal").trim();
+        const foil = variant?.foil ? String(variant.foil).trim() : "";
+        const variantType = /reverse/i.test(type)
+          ? "reverse"
+          : /holo/i.test(type)
+            ? "holo"
+            : "normal";
+        const label = foil ? `${variantType === "reverse" ? "Reverse Holo" : variantType === "holo" ? "Holo" : "Normal"} (${foil})` : (variantType === "reverse" ? "Reverse Holo" : variantType === "holo" ? "Holo" : "Normal");
+        const variantKey = `${variantType}${foil ? `-${foil}` : ""}`
+          .replace(/[^a-z0-9]+/gi, "-")
+          .replace(/^-|-$/g, "")
+          .toLowerCase() || "normal";
+        const sourceVariantId = String(variant?.variantId || variant?.id || `${card.id}:${variantKey}`);
+        const canonicalKey = makeCollectibleKey({
+          setId: set.id,
+          cardNumber: number,
+          variantType: variantType,
+          foil,
+          sourceVariantId,
+        });
+        const variantImage = resolveCardImage({ ...variant, image: variant?.image || card.image }, set) || resolveCardImage(card, set) || set.logo || "";
+        return {
+          id: canonicalKey,
+          cardId: baseId,
+          baseCardId: baseId,
+          collectibleKey: canonicalKey,
+          number,
+          label,
+          variant: label,
+          variantKey,
+          finish: label,
+          image: variantImage,
+          rarity: String(card.rarity || "Unknown"),
+          setId: set.id,
+          setName: set.name,
+          source: "tcgdex",
+          sourceCardId: String(card.id || baseId),
+          sourceVariantId,
+          pricing: variant?.pricing || null,
+        };
+      })
+    : [{
+        id: makeCollectibleKey({ setId: set.id, cardNumber: number, variantType: "normal", foil: "", sourceVariantId: String(card.id || `${baseId}:normal`) }),
+        cardId: baseId,
+        baseCardId: baseId,
+        collectibleKey: makeCollectibleKey({ setId: set.id, cardNumber: number, variantType: "normal", foil: "", sourceVariantId: String(card.id || `${baseId}:normal`) }),
+        number,
+        label: "Normal",
+        variant: "Normal",
+        variantKey: "normal",
+        finish: "Normal",
+        image: resolveCardImage(card, set) || set.logo || "",
+        rarity: String(card.rarity || "Unknown"),
+        setId: set.id,
+        setName: set.name,
+        source: "tcgdex",
+        sourceCardId: String(card.id || baseId),
+        sourceVariantId: String(card.id || `${baseId}:normal`),
+        pricing: null,
+      }];
+
+  return {
+    ...card,
+    id: baseId,
+    cardId: baseId,
+    baseCardId: baseId,
+    collectibleKey: baseId,
+    number,
+    name: String(card.name || `Card ${number}`),
+    image: resolveCardImage(card, set) || "",
+    rarity: String(card.rarity || "Unknown"),
+    variant: "Normal",
+    finish: "Normal",
+    setId: set.id,
+    setName: set.name,
+    language: set.language || "English",
+    variants: variantRecords,
+  };
 };
 
 const cardNumberValue = (value) => {
@@ -554,6 +697,60 @@ const formatCardNumber = (value) => {
   const numeric = Number(cardNumberValue(value));
   if (!Number.isFinite(numeric)) return "001";
   return String(Math.max(1, numeric)).padStart(3, "0");
+};
+
+const uniqueByCollectibleKey = (cards = []) => {
+  const seen = new Set();
+  return (cards || []).filter((card) => {
+    const key = String(
+      card?.collectibleKey ||
+        card?.id ||
+        card?.cardId ||
+        card?.baseCardId ||
+        card?.number ||
+        "",
+    ).trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const variantKeyFromCard = (card = {}) => {
+  const variantKey = String(
+    card?.variantKey ||
+      card?.variant ||
+      card?.finish ||
+      "",
+  )
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "");
+
+  return variantKey && variantKey !== "Unknown" ? variantKey : null;
+};
+
+const cardCanonicalKey = (card = {}) => {
+  const direct = String(
+    card?.collectibleKey ||
+      card?.id ||
+      card?.cardId ||
+      card?.baseCardId ||
+      card?.number ||
+      "",
+  ).trim();
+
+  if (direct && direct !== "undefined") {
+    if (direct.includes(":")) return direct;
+    const suffix = variantKeyFromCard(card);
+    if (suffix) return `${direct}:${suffix}`;
+    return direct;
+  }
+
+  const setId = String(card?.setId || "");
+  const number = String(card?.number || "");
+  if (setId && number) return `${setId}:${number}`;
+  return String(card?.id || card?.number || "");
 };
 
 const cardVariantRank = (card = {}) => {
@@ -612,15 +809,22 @@ const normalizeCard = (set, card, index) => {
     /event|special/i.test(String(card.series || "")),
   );
 
+  const canonicalCollectibleKey = String(
+    card.collectibleKey ||
+      card.id ||
+      `${set.id}-${index + 1}`,
+  );
+  const canonicalId = String(card.id || canonicalCollectibleKey || `${set.id}-${index + 1}`);
   const normalizedCard = {
     ...card,
-    id: String(card.id || `${set.id}-${index + 1}`),
+    id: canonicalCollectibleKey || canonicalId,
+    collectibleKey: canonicalCollectibleKey,
     number: formatCardNumber(card.number || `${index + 1}`),
     name: String(card.name || `Card ${index + 1}`),
     image: card.image ? String(card.image) : null,
     rarity,
     variant,
-    value: Number.isFinite(Number(card.value)) ? Number(card.value) : 0,
+    value: Number.isFinite(Number(card.value)) ? Number(card.value) : null,
     priceTimestamp: card.priceTimestamp || setsData.generatedAt || null,
     collected: Boolean(card.collected),
     isPromo,
@@ -636,6 +840,59 @@ const normalizeCard = (set, card, index) => {
   };
 };
 
+const mergeCardMetadata = (primaryCard = {}, fallbackCard = {}) => {
+  const primary = primaryCard || {};
+  const fallback = fallbackCard || {};
+  const mergedValue = Number.isFinite(Number(primary.value))
+    ? Number(primary.value)
+    : Number.isFinite(Number(fallback.value))
+      ? Number(fallback.value)
+      : null;
+
+  return {
+    ...fallback,
+    ...primary,
+    collectibleKey: String(
+      primary.collectibleKey || fallback.collectibleKey || primary.id || fallback.id || primary.cardId || fallback.cardId || "",
+    ),
+    id: String(primary.id || fallback.id || primary.collectibleKey || fallback.collectibleKey || primary.cardId || fallback.cardId || ""),
+    cardId: String(
+      primary.cardId || fallback.cardId || primary.baseCardId || fallback.baseCardId || primary.id || fallback.id || "",
+    ),
+    baseCardId: String(
+      primary.baseCardId || fallback.baseCardId || primary.cardId || fallback.cardId || primary.id || fallback.id || "",
+    ),
+    number: String(primary.number || fallback.number || ""),
+    name: String(primary.name || fallback.name || "Unknown card"),
+    image: String(primary.image || fallback.image || ""),
+    rarity: String(primary.rarity || fallback.rarity || "Unknown"),
+    variant: String(primary.variant || fallback.variant || primary.finish || fallback.finish || "Normal"),
+    finish: String(primary.finish || fallback.finish || primary.variant || fallback.variant || "Unknown"),
+    value: mergedValue,
+    setId: String(primary.setId || fallback.setId || ""),
+    setName: String(primary.setName || fallback.setName || ""),
+  };
+};
+
+const fillMissingFromSource = (primary = [], fallback = []) => {
+  const merged = new Map();
+  const queue = [...(primary || []), ...(fallback || [])];
+
+  for (const card of queue) {
+    const key = cardCanonicalKey(card);
+    if (!key) continue;
+    const existing = merged.get(key);
+    merged.set(key, existing ? mergeCardMetadata(existing, card) : card);
+  }
+
+  return Array.from(merged.values()).map((card) => {
+    const source = (fallback || []).find(
+      (sourceCard) => cardCanonicalKey(sourceCard) === cardCanonicalKey(card),
+    );
+    return mergeCardMetadata(card, source || {});
+  });
+};
+
 const normalizeSet = (set) => {
   const pokecottageGuide =
     pokecottageGuides.guides.find((guide) => guide.setId === set.id) || null;
@@ -648,7 +905,9 @@ const normalizeSet = (set) => {
       ? pitchBlackTcgdex
       : set.id === "me4"
         ? chaosRisingTcgdex
-        : null;
+        : set.id === "me2pt5"
+          ? ascendedHeroesTcgdex
+          : null;
   const generationFromDexId = (raw) => {
     const id = Number(Array.isArray(raw) ? raw[0] : raw);
     if (!id) return null;
@@ -696,26 +955,187 @@ const normalizeSet = (set) => {
         ? { ...pokecottageGuide, generatedAt: pokecottageGuides.generatedAt }
         : null,
     );
-  const sourceGrandmaster =
+  const tcgdexRuntimeCards = Array.isArray(tcgdexSet?.cards)
+    ? tcgdexSet.cards.map((card, index) => buildTcgdexRuntimeCard(set, card, index))
+    : [];
+  const tcgdexPhysicalCollectibles = tcgdexRuntimeCards.flatMap((card) =>
+    (card.variants || []).map((variant) => {
+      const variantType = String(variant.variantKey || variant.variant || variant.finish || "normal").trim();
+      const sourceVariantId = String(variant.sourceVariantId || variant.variantId || variant.id || `${card.id}:${variantType}`);
+      const canonicalKey = makeCollectibleKey({
+        setId: String(variant.setId || set.id),
+        cardNumber: String(variant.number || card.number || ""),
+        variantType: variantType,
+        foil: String(variant.foil || ""),
+        sourceVariantId,
+      });
+      return {
+        ...variant,
+        id: canonicalKey,
+        collectibleKey: canonicalKey,
+        cardId: String(variant.cardId || card.cardId || card.id),
+        baseCardId: String(variant.baseCardId || card.baseCardId || card.id),
+        number: String(variant.number || card.number || ""),
+        name: String(variant.name || card.name || ""),
+        image: resolveCardImage({ ...card, ...variant }, set) || set.logo || "",
+        rarity: String(variant.rarity || card.rarity || "Unknown"),
+        variant: String(variant.variant || variant.label || card.variant || "Normal"),
+        variantKey: String(variant.variantKey || variant.label || "normal"),
+        finish: String(variant.finish || variant.variant || variant.label || card.finish || "Normal"),
+        setId: String(variant.setId || set.id),
+        setName: String(variant.setName || set.name),
+        source: String(variant.source || "tcgdex"),
+        sourceCardId: String(variant.sourceCardId || card.id || ""),
+        sourceVariantId,
+        pricing: variant.pricing || null,
+      };
+    }),
+  );
+  const tcgdexCollectibleMap = new Set(
+    tcgdexPhysicalCollectibles
+      .map((card) => String(card?.collectibleKey || card?.id || "").trim())
+      .filter(Boolean),
+  );
+  const mepMasterRecords = (() => {
+    const guideRecords = Array.isArray(pokecottageGuide?.records)
+      ? pokecottageGuide.records
+      : [];
+    return guideRecords
+      .filter((record) => /MEP\s*091/i.test(String(record.number || "")) && /Mega Dragonite ex/i.test(String(record.name || "")))
+      .map((record) => ({
+        id: `mep-091`,
+        collectibleKey: `mep-091`,
+        cardId: `mep-091`,
+        baseCardId: `mep-091`,
+        number: String(record.number || "091"),
+        name: String(record.name || "Mega Dragonite ex"),
+        image: String(record.image || ""),
+        rarity: String(record.rarity || "Promo"),
+        variant: String(record.finish || "Holo"),
+        variantKey: "holo",
+        finish: String(record.finish || "Holo"),
+        setId: "mep",
+        setName: "MEP",
+        source: "pokecottage",
+        sourceCardId: "mep-091",
+        sourceVariantId: "mep-091",
+        pricing: null,
+      }));
+  })();
+
+  if (tcgdexSet && Array.isArray(tcgdexSet.cards) && tcgdexRuntimeCards.length) {
+    const cards = sortCardsByNumber(
+      tcgdexRuntimeCards.map((card, index) => normalizeCard(
+        set,
+        {
+          ...card,
+          variants: Array.isArray(card.variants) ? card.variants : [card],
+        },
+        index,
+      )),
+    );
+    const masterCards = sortCardsByNumber(
+      uniqueByCollectibleKey([
+        ...tcgdexPhysicalCollectibles,
+        ...mepMasterRecords,
+      ]),
+    );
+    const dedupedGrandmasterCards = sortCardsByNumber(
+      uniqueByCollectibleKey(
+        (Array.isArray(curatedSet?.records) ? curatedSet.records : []).filter((record) => {
+          const candidateKey = String(record.collectibleKey || `${record.cardId || "unknown"}:${record.finish || record.variant || "normal"}`);
+          return !tcgdexCollectibleMap.has(candidateKey);
+        }).map((record) => ({
+          ...record,
+          id: String(record.collectibleKey || `${record.cardId}:${record.finish || "normal"}`),
+          collectibleKey: String(record.collectibleKey || `${record.cardId}:${record.finish || "normal"}`),
+          cardId: String(record.cardId || record.collectibleKey || ""),
+          baseCardId: String(record.cardId || record.collectibleKey || ""),
+          setId: String(record.setId || set.id),
+          setName: String(record.setName || set.name),
+          image: resolveCardImage(record, set) || set.logo || "",
+          variant: String(record.finish || record.variant || "Normal"),
+          variantKey: String(record.variantKey || record.finish || "normal"),
+          finish: String(record.finish || record.variant || "Normal"),
+          source: String(record.sourceProvider || "curated"),
+          sourceCardId: String(record.sourceId || record.cardId || ""),
+          sourceVariantId: String(record.sourceId || record.collectibleKey || ""),
+          pricing: record.pricing || null,
+        })),
+      ),
+    );
+    const category = detectSetCategory(set);
+    const grandmasterCards = Array.isArray(curatedSet?.records)
+      ? dedupedGrandmasterCards
+      : [];
+
+    return {
+      ...set,
+      id: String(set.id),
+      code: String(set.code || set.id),
+      name: String(set.name),
+      series: inferSetSeries(set),
+      language: String(set.language || category),
+      category,
+      releaseDate: String(set.releaseDate || "2025-01-01"),
+      logo: String(set.logo || "https://images.scrydex.com/pokemon/me5-logo/logo"),
+      color: String(set.color || "#6d28d9"),
+      type: String(set.type || "Master"),
+      totalCards: Number(tcgdexSet?.cardCount?.total || cards.length || 0),
+      baseTotal: cards.length,
+      completeTotal: cards.length,
+      masterTotal: masterCards.length,
+      grandmasterTotal: grandmasterCards.length,
+      grandmasterAvailable: Boolean(grandmasterCards.length),
+      availableTiers: grandmasterCards.length ? ["complete", "master", "grandmaster"] : ["complete", "master"],
+      pokecottageGuide: pokecottageGuide || null,
+      grandmasterReleasedTotal: grandmasterCards.length,
+      percent: Number(set.percent || 0),
+      cards,
+      baseCards: cards,
+      completeCards: cards,
+      masterCards,
+      grandmasterCards,
+      physicalCollectibles: tcgdexPhysicalCollectibles,
+      tcgdexRawCards: Array.isArray(tcgdexSet?.cards) ? tcgdexSet.cards : [],
+      providerEvidence: null,
+      dataQuality: null,
+    };
+  }
+
+  const sourceGrandmaster = fillMissingFromSource(
     curatedRequirements?.grandmasterCards ||
-    (Array.isArray(set.grandmasterCards)
-      ? set.grandmasterCards
-      : set.cards || []);
+      (Array.isArray(set.grandmasterCards)
+        ? set.grandmasterCards
+        : set.cards || []),
+    set.cards || [],
+  );
   const sourceComplete = Array.isArray(set.completeCards)
-    ? set.completeCards
-    : curatedRequirements?.completeCards ||
-      sourceGrandmaster.filter(
-        (card) => !card.collectionTier || card.collectionTier === "complete",
-      );
+    ? fillMissingFromSource(set.completeCards, set.cards || [])
+    : curatedRequirements?.completeCards
+      ? fillMissingFromSource(curatedRequirements.completeCards, set.cards || [])
+      : fillMissingFromSource(
+          sourceGrandmaster.filter(
+            (card) => !card.collectionTier || card.collectionTier === "complete",
+          ),
+          set.cards || [],
+        );
   const sourceMaster = Array.isArray(set.masterCards)
-    ? set.masterCards
-    : curatedRequirements?.masterCards ||
-      sourceGrandmaster.filter((card) => card.collectionTier !== "grandmaster");
+    ? fillMissingFromSource(set.masterCards, set.cards || [])
+    : curatedRequirements?.masterCards
+      ? fillMissingFromSource(curatedRequirements.masterCards, set.cards || [])
+      : fillMissingFromSource(
+          sourceGrandmaster.filter((card) => card.collectionTier !== "grandmaster"),
+          set.cards || [],
+        );
   const sourceBase =
     curatedRequirements?.baseCards ||
-    sourceComplete.filter(
-      (card) =>
-        Number.parseInt(card.number, 10) <= Number(set.printedTotal || 0),
+    fillMissingFromSource(
+      sourceComplete.filter(
+        (card) =>
+          Number.parseInt(card.number, 10) <= Number(set.printedTotal || 0),
+      ),
+      set.cards || [],
     );
   const variantsByCardId = sourceGrandmaster.reduce((groups, card) => {
     const key = String(card.cardId || card.id || "");
@@ -757,10 +1177,29 @@ const normalizeSet = (set) => {
     ),
   ).size;
 
-  // Never pad an incomplete source response with invented cards. The declared
-  // total remains useful metadata, but checklist requirements only use records
-  // that actually exist in the verified/curated source data.
-  const cards = [...explicitCards];
+  const mergedSetCards = fillMissingFromSource(
+    [
+      ...sourceGrandmaster,
+      ...sourceMaster,
+      ...sourceComplete,
+      ...sourceBase,
+      ...(set.cards || []),
+    ],
+    set.cards || [],
+  );
+  const cards = sortCardsByNumber(
+    mergedSetCards.map((card, index) =>
+      normalizeCard(
+        set,
+        {
+          ...tcgdexMetadataByNumber[String(Number.parseInt(card.number, 10))],
+          ...card,
+          variants: variantsByCardId[String(card.cardId || card.id || "")] || [card],
+        },
+        index,
+      ),
+    ),
+  );
 
   const category = detectSetCategory(set);
 
@@ -853,17 +1292,79 @@ export const SETS = [
   ...POCKET_EXPANSION_SETS,
 ];
 export const SETS_BY_ID = Object.fromEntries(SETS.map((set) => [set.id, set]));
-export const CARD_LIBRARY = SETS.flatMap(
-  (set) => set.grandmasterCards || set.cards,
-);
+const buildCardLibrary = () => {
+  const collected = new Map();
+
+  const register = (card) => {
+    if (!card) return;
+
+    const key = String(
+      card.collectibleKey ||
+      card.id ||
+      card.cardId ||
+      card.baseCardId ||
+      ""
+    ).trim();
+
+    if (!key) return;
+
+    const existing = collected.get(key);
+
+    if (!existing) {
+      collected.set(key, card);
+      return;
+    }
+
+    // Preserve one physical collectible while allowing later sources
+    // to fill metadata that may be missing from the first occurrence.
+    collected.set(key, mergeCardMetadata(existing, card));
+  };
+
+  for (const set of SETS) {
+    (set.cards || []).forEach(register);
+    (set.baseCards || []).forEach(register);
+    (set.completeCards || []).forEach(register);
+    (set.masterCards || []).forEach(register);
+    (set.grandmasterCards || []).forEach(register);
+  }
+
+  return Array.from(collected.values());
+};
+export const CARD_LIBRARY = buildCardLibrary();
 export const CARD_LIBRARY_BY_ID = Object.fromEntries(
-  CARD_LIBRARY.map((card) => [card.id, card]),
+  CARD_LIBRARY.filter(Boolean).map((card) => [String(card.id || card.collectibleKey || card.cardId || ""), card]),
 );
 
 export const getSetById = (setId, fallback = SETS[0]) =>
   SETS_BY_ID[setId] || fallback;
-export const getCardById = (cardId, fallback = CARD_LIBRARY[0]) =>
-  CARD_LIBRARY_BY_ID[cardId] || fallback;
+export const getCardById = (cardId, fallback = CARD_LIBRARY[0]) => {
+  const raw = String(cardId || "").trim();
+  if (!raw) return fallback;
+  const direct = CARD_LIBRARY_BY_ID[raw];
+  if (direct) return direct;
+  const directCollectible = CARD_LIBRARY.find((card) => {
+    const ids = [
+      String(card?.collectibleKey || ""),
+      String(card?.id || ""),
+      String(card?.cardId || ""),
+      String(card?.baseCardId || ""),
+    ];
+    return ids.includes(raw);
+  });
+  if (directCollectible) return directCollectible;
+  const normalized = String(raw).split(":")[0];
+  if (!normalized || normalized === raw) return fallback;
+  const baseMatch = CARD_LIBRARY.find((card) => {
+    const ids = [
+      String(card?.collectibleKey || ""),
+      String(card?.id || ""),
+      String(card?.cardId || ""),
+      String(card?.baseCardId || ""),
+    ];
+    return ids.includes(normalized) || ids.some((id) => id.startsWith(`${normalized}:`));
+  });
+  return baseMatch || fallback;
+};
 export const getCardsForSet = (setId) => SETS_BY_ID[setId]?.cards || [];
 export const getCardsForSetTier = (setId, tier = "complete") => {
   const set = SETS_BY_ID[setId];

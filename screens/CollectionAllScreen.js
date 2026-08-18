@@ -31,6 +31,7 @@ export default function CollectionAllScreen({
 }) {
   const [query, setQuery] = useState("");
   const quantityFor = (card) => Number(collectionQuantities[card.id] || 0);
+  const ownership = collectionFilters.ownership || "Owned";
   const selectedSets = Array.isArray(collectionFilters.sets)
     ? collectionFilters.sets
     : collectionFilters.set && collectionFilters.set !== "All Sets" ? [collectionFilters.set] : [];
@@ -38,14 +39,14 @@ export default function CollectionAllScreen({
     selectedSets.length > 0,
     collectionFilters.rarity && collectionFilters.rarity !== "All",
     collectionFilters.condition && collectionFilters.condition !== "All",
-    collectionFilters.ownership && collectionFilters.ownership !== "Owned",
+    ownership && ownership !== "Owned" && ownership !== "All Cards",
     collectionFilters.sortBy && collectionFilters.sortBy !== "Set Number (Default)",
   ].filter(Boolean).length;
   const cards = sortCards(CARD_LIBRARY.filter((card) => {
     const quantity = quantityFor(card);
-    const ownership = collectionFilters.ownership || "Owned";
     if (ownership === "Owned" && quantity <= 0) return false;
     if (ownership === "Missing" && quantity > 0) return false;
+    if (ownership === "All Cards") return true;
     if (selectedSets.length && !selectedSets.includes(card.setName)) return false;
     if (collectionFilters.rarity && collectionFilters.rarity !== "All" && normalizePrintedRarity(card.rarity) !== collectionFilters.rarity) return false;
     if (collectionFilters.condition && collectionFilters.condition !== "All") {
@@ -92,7 +93,14 @@ export default function CollectionAllScreen({
             onButtonPress={() => {
               if (ownedCount > 0 || activeFilterCount > 0 || query) {
                 setQuery("");
-                setCollectionFilters({ sets: [], rarity: "All", condition: "All", ownership: "Owned" });
+                setCollectionFilters({
+                  ...collectionFilters,
+                  sets: [],
+                  rarity: "All",
+                  condition: "All",
+                  ownership: "Owned",
+                  sortBy: "Set Number (Default)",
+                });
               } else navigate("AllSets");
             }}
           />

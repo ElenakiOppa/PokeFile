@@ -40,6 +40,32 @@ assert.equal(canonical.quality.unknownClassifications.length, 0);
 assert.deepEqual(canonical.quality.classificationDisputes.map((record) => Number(record.number)), [28, 35, 47, 56]);
 assert.equal(canonical.quality.orphanedAssociations.length, 0);
 assert.equal(canonical.quality.duplicateKeys.length, 0);
+const duplicateKeysFor = (items) => {
+  const seen = new Set();
+  const duplicates = [];
+  for (const item of items) {
+    const key = String(item?.collectibleKey || item?.id || '');
+    if (!key) continue;
+    if (seen.has(key)) duplicates.push(key);
+    seen.add(key);
+  }
+  return [...new Set(duplicates)];
+};
+assert.equal(duplicateKeysFor(master).length, 0, `Pitch Black master duplicates: ${duplicateKeysFor(master).slice(0, 10).join(', ')}`);
+assert.equal(duplicateKeysFor(grandmaster).length, 0, `Pitch Black grandmaster duplicates: ${duplicateKeysFor(grandmaster).slice(0, 10).join(', ')}`);
+const duplicateIdsFor = (items) => {
+  const seen = new Set();
+  const duplicates = [];
+  for (const item of items) {
+    const key = String(item?.id || '');
+    if (!key) continue;
+    if (seen.has(key)) duplicates.push(key);
+    seen.add(key);
+  }
+  return [...new Set(duplicates)];
+};
+assert.equal(duplicateIdsFor(master).length, 0, `Pitch Black master id duplicates: ${duplicateIdsFor(master).slice(0, 10).join(', ')}`);
+assert.equal(duplicateIdsFor(grandmaster).length, 0, `Pitch Black grandmaster id duplicates: ${duplicateIdsFor(grandmaster).slice(0, 10).join(', ')}`);
 assert.ok(master.every((record) => record.collectibleKey && Array.isArray(record.evidence)));
 assert.ok(grandmaster.every((record) => record.collectibleKey));
 

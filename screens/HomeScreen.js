@@ -10,7 +10,64 @@ const { width } = Dimensions.get('window');
 const ACQUISITION_WIDTH = Math.min(174, width * 0.43);
 
 export default function HomeScreen({ navigate, binders = [], collectionQuantities = {}, vaultAssets = [], rawAcquisitions = {}, valueSnapshots = [] }) {
+  console.log('🔥🔥🔥 HOME SCREEN DEBUG CODE IS RUNNING 🔥🔥🔥');
   const { preferences } = useAppContext();
+  const debugCardLibraryDuplicates = useMemo(() => {
+  const byId = new Map();
+
+  for (const card of CARD_LIBRARY) {
+    const id = String(card?.id || '');
+
+    if (!byId.has(id)) {
+      byId.set(id, []);
+    }
+
+    byId.get(id).push(card);
+  }
+
+  return [...byId.entries()]
+    .filter(([id, cards]) => id && cards.length > 1)
+    .map(([id, cards]) => ({
+      id,
+      count: cards.length,
+      cards: cards.map((card) => ({
+        id: card.id,
+        collectibleKey: card.collectibleKey,
+        setId: card.setId,
+        setName: card.setName,
+        number: card.number,
+        name: card.name,
+        variant: card.variant,
+        variantKey: card.variantKey,
+        finish: card.finish,
+        image: card.image,
+        value: card.value,
+        source: card.source,
+        sourceCardId: card.sourceCardId,
+        sourceVariantId: card.sourceVariantId,
+      })),
+    }));
+}, []);
+
+console.log('🔥 CARD_LIBRARY SIZE', CARD_LIBRARY.length);
+console.log(
+  '🔥 CARD_LIBRARY DUPLICATE IDS COUNT',
+  debugCardLibraryDuplicates.length
+);
+
+console.log(
+  '🔥 TARGET DUPLICATES',
+  debugCardLibraryDuplicates.filter((entry) =>
+    ['me5-28:normal', 'me5-35:normal'].includes(entry.id)
+  )
+);
+console.log(
+  '🔥 FIRST 10 DUPLICATE IDS',
+  debugCardLibraryDuplicates.slice(0, 10).map((entry) => ({
+    id: entry.id,
+    count: entry.count,
+  }))
+);
   const currency = preferences.currency || 'EUR';
   const portfolio = useMemo(() => calculateVaultPortfolio({ ownership: collectionQuantities, cards: CARD_LIBRARY, assets: vaultAssets, rawAcquisitions, currency }), [collectionQuantities, vaultAssets, rawAcquisitions, currency]);
   const ownedCards = useMemo(() => CARD_LIBRARY.filter((card) => Number(collectionQuantities[card.id] || 0) > 0).sort((a, b) => Number(b.value || 0) - Number(a.value || 0)), [collectionQuantities]);

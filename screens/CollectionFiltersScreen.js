@@ -26,7 +26,10 @@ export default function CollectionFiltersScreen({ goBack, navigate, collectionFi
   const visibleSets = useMemo(() => SET_OPTIONS.filter((name) => name.toLowerCase().includes(setQuery.trim().toLowerCase())), [setQuery]);
   const toggleSet = (name) => setSets((current) => current.includes(name) ? current.filter((item) => item !== name) : [...current, name]);
   const clear = () => { setSets([]); setRarity("All"); setCondition("All"); setOwnership("Owned"); setSortBy(DEFAULTS.sortBy); };
-  const apply = () => { setCollectionFilters({ sets, rarity, condition, ownership, sortBy }); goBack(); };
+  const apply = () => {
+    setCollectionFilters({ ...collectionFilters, sets, rarity, condition, ownership, sortBy });
+    goBack();
+  };
   const setSummary = sets.length === 0 ? "All expansion sets" : sets.length === 1 ? sets[0] : `${sets.length} expansion sets selected`;
 
   return <View style={styles.container}>

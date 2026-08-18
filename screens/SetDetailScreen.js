@@ -4,19 +4,28 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { getSetById } from '../data';
 import { getSetRequirements, isOwned } from '../lib/collectibles';
+import { getSetStats } from '../lib/setStats';
 import { getLiveSetValuations } from '../lib/liveSetValuation';
+import { logTcgdexMarketplaceAudit } from '../lib/tcgdexAudit';
 
 const TIERS = ['Complete', 'Master', 'Grandmaster'];
 
 export default function SetDetailScreen({ navigate, goBack, params = {}, collectionQuantities = {}, vaultAssets = [] }) {
   const setId = params.setId || 'pitch-black';
   const set = useMemo(() => getSetById(setId), [setId]);
+
+  useEffect(() => {
+    if (!__DEV__ || !set) return;
+    logTcgdexMarketplaceAudit(set);
+  }, [set]);
+
   const availableTiers = TIERS.filter((item) => item !== 'Grandmaster' || set?.grandmasterAvailable);
   const requestedTier = String(params.tier || 'master').toLowerCase();
   const [tier, setTier] = useState(availableTiers.find((item) => item.toLowerCase() === requestedTier) || 'Master');
   const requirements = useMemo(() => set ? getSetRequirements(set, tier.toLowerCase()) : [], [set, tier]);
-  const owned = requirements.reduce((sum, card) => sum + (isOwned(collectionQuantities, card) ? 1 : 0), 0);
-  const percent = requirements.length ? (owned / requirements.length) * 100 : 0;
+  const stats = useMemo(() => getSetStats(set, tier.toLowerCase(), collectionQuantities), [set, tier, collectionQuantities]);
+  const owned = stats.owned;
+  const percent = stats.completionPercent;
   const [liveValue, setLiveValue] = useState({ status: 'loading' });
   useEffect(() => {
     if (!set) return undefined;
@@ -28,22 +37,30 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
     return () => { active = false; };
   }, [set]);
   const tierQuote = liveValue.valuations?.[tier.toLowerCase()];
+  const fallbackTierValue = (set?.[`${tier.toLowerCase()}Cards`] || set?.cards || []).reduce((sum, card) => sum + (Number.isFinite(Number(card.value)) ? Number(card.value) : 0), 0);
+  const hasTierValue = Number.isFinite(Number(tierQuote?.value)) && Number(tierQuote.value) > 0;
   const valueLabel = liveValue.status === 'loading'
     ? 'Updating…'
-    : liveValue.status === 'error' || !tierQuote?.complete
-      ? 'Unavailable'
-      : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tierQuote.value);
+    : hasTierValue
+      ? new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tierQuote.value)
+      : fallbackTierValue > 0
+        ? new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(fallbackTierValue)
+        : 'Unavailable';
   const ownedRequirements = requirements.filter((requirement) => isOwned(collectionQuantities, requirement));
   const collectedQuote = ownedRequirements.reduce((result, requirement) => {
     const price = tierQuote?.requirementPrices?.[String(requirement.collectibleKey || requirement.id)];
     if (price == null) return { ...result, missing: result.missing + 1 };
     return { ...result, value: result.value + Number(price) };
   }, { value: 0, missing: 0 });
+  const fallbackCollectedValue = ownedRequirements.reduce((sum, requirement) => sum + (Number.isFinite(Number(requirement.value)) ? Number(requirement.value) : 0), 0);
+  const hasCollectedValue = Number.isFinite(Number(collectedQuote.value)) && Number(collectedQuote.value) > 0;
   const collectedValueLabel = liveValue.status === 'loading'
     ? 'Updating…'
-    : liveValue.status === 'error' || collectedQuote.missing > 0
-      ? 'Unavailable'
-      : new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(collectedQuote.value);
+    : hasCollectedValue
+      ? new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(collectedQuote.value)
+      : fallbackCollectedValue > 0
+        ? new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(fallbackCollectedValue)
+        : 'Unavailable';
   const released = set?.releaseDate ? new Date(set.releaseDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Release date unavailable';
 
   if (!set) return <View style={styles.screen}><Text style={styles.missing}>Set unavailable</Text></View>;
@@ -77,9 +94,9 @@ export default function SetDetailScreen({ navigate, goBack, params = {}, collect
         </View>
 
         <View style={styles.progressCard}>
-          <View style={styles.progressHeader}><Text style={styles.progressLabel}>COMPLETION INDEX</Text><Text style={styles.progressValue}>{percent.toFixed(1)}% Completed</Text></View>
+          <View style={styles.progressHeader}><Text style={styles.progressLabel}>COMPLETION INDEX</Text><Text style={styles.progressValue}>{percent}% Completed</Text></View>
           <View style={styles.track}><View style={[styles.fill, { width: `${Math.min(100, percent)}%` }]} /></View>
-          <View style={styles.counts}><Text style={styles.countText}>{owned} / {requirements.length} Cards Owned</Text><Text style={styles.countText}>{Math.max(0, requirements.length - owned)} Needed</Text></View>
+          <View style={styles.counts}><Text style={styles.countText}>{owned} / {stats.required} Cards Owned</Text><Text style={styles.countText}>{Math.max(0, stats.required - owned)} Needed</Text></View>
         </View>
 
         <View style={styles.stats}>

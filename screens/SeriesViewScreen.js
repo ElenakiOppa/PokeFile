@@ -72,10 +72,15 @@ export default function SeriesViewScreen({ navigate, params = {} }) {
   const valuationLabel = (set) => {
     const state = liveValues[set.id];
     if (!state || state.status === 'loading') return 'Updating live value…';
-    if (state.status === 'error') return 'Live value unavailable';
-    const quote = state.valuations?.complete;
-    if (!quote?.complete) return `Live pricing ${quote?.priced || 0}/${quote?.required || set.completeTotal || 0}`;
-    return `Valuation: ${formatValuation(quote.value)}`;
+    const quote = state.valuations?.complete || state.valuations?.master || state.valuations?.grandmaster;
+    if (state.status === 'error' && !quote) {
+      const fallback = (set?.completeCards || set?.cards || []).reduce((sum, card) => sum + (Number.isFinite(Number(card.value)) ? Number(card.value) : 0), 0);
+      return fallback > 0 ? `Valuation: ${formatValuation(fallback)}` : 'Live value unavailable';
+    }
+    if (quote && Number.isFinite(Number(quote.value)) && Number(quote.value) > 0) return `Valuation: ${formatValuation(quote.value)}`;
+    if (quote) return `Live pricing ${quote.priced || 0}/${quote.required || set.completeTotal || 0}`;
+    const fallback = (set?.completeCards || set?.cards || []).reduce((sum, card) => sum + (Number.isFinite(Number(card.value)) ? Number(card.value) : 0), 0);
+    return fallback > 0 ? `Valuation: ${formatValuation(fallback)}` : 'Live value unavailable';
   };
 
   return (

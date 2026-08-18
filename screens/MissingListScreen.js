@@ -86,28 +86,40 @@ export default function MissingListScreen({
             Binder complete — every exact requirement is owned.
           </Text>
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={s.row}
-            onPress={() => navigate("CardDetail", { cardId: item.id })}
-          >
-            <Image source={{ uri: item.image }} style={s.image} />
-            <View style={s.info}>
-              <Text style={s.name}>{item.name}</Text>
-              <Text style={s.meta}>
-                #{item.number} · {item.finish}
-              </Text>
-            </View>
-            <View style={s.action}>
-              <Text style={s.price}>
-                {Number(item.value) > 0
-                  ? `€${Number(item.value).toFixed(2)}`
-                  : "—"}
-              </Text>
-              <Text style={s.find}>FIND CARD</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const cardImage = item?.image || set?.logo || null;
+          const cardId = item?.id || item?.cardId || item?.collectibleKey || item?.baseCardId;
+          const priceValue = Number(item?.value);
+
+          return (
+            <TouchableOpacity
+              style={s.row}
+              onPress={() => navigate("CardDetail", { cardId })}
+            >
+              {cardImage ? (
+                <Image source={{ uri: cardImage }} style={s.image} />
+              ) : (
+                <View style={[s.image, s.imageFallback]}>
+                  <Text style={s.imageFallbackText}>?</Text>
+                </View>
+              )}
+              <View style={s.info}>
+                <Text style={s.name}>{item?.name || "Unknown card"}</Text>
+                <Text style={s.meta}>
+                  #{item?.number || "—"} · {item?.finish || "Unknown"}
+                </Text>
+              </View>
+              <View style={s.action}>
+                <Text style={s.price}>
+                  {Number.isFinite(priceValue) && priceValue > 0
+                    ? `€${priceValue.toFixed(2)}`
+                    : "—"}
+                </Text>
+                <Text style={s.find}>FIND CARD</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );

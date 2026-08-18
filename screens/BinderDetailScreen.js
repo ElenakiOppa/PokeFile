@@ -64,7 +64,7 @@ export default function BinderDetailScreen({
   const cardImageHeight = Math.round(cardWidth * 1.34);
   const isFreeform = savedBinder?.kind === "freeform";
   const requirementSlots = useMemo(
-    () => getGeneratedBinderSlots(binder, tier),
+    () => getGeneratedBinderSlots(binder, tier).filter((slot) => slot?.requirement && (slot.requirement.name || slot.requirement.cardId || slot.requirement.id || slot.requirement.collectibleKey)),
     [binder, tier],
   );
   const slots = useMemo(() => {

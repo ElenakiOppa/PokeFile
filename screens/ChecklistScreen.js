@@ -59,7 +59,8 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
       <ScrollView style={styles.list} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
         {cards.map((card) => {
           const owned = ownedById[card.id];
-          const value = Number(tierPrices[String(card.collectibleKey || card.id)] || 0);
+          const rawPrice = tierPrices[String(card.collectibleKey || card.id)];
+          const value = rawPrice == null ? null : Number(rawPrice);
           return (
             <View key={card.id} style={[styles.row, owned && styles.rowOwned]}>
               <TouchableOpacity style={[styles.checkbox, owned && styles.checkboxOwned]} onPress={() => toggle(card)} accessibilityLabel={owned ? `Remove ${card.name} from collection` : `Add ${card.name} to collection`}>
@@ -73,7 +74,7 @@ export default function ChecklistScreen({ navigate, goBack, params = {}, collect
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.finish} numberOfLines={1}>{card.variant || card.finish || card.rarity || 'Standard'}</Text>
-                  {value > 0 ? <Text style={styles.value}>€{value.toFixed(2)}</Text> : pricing.status === 'loading' ? <Text style={styles.pricePending}>Updating…</Text> : null}
+                  {value == null ? (pricing.status === 'loading' ? <Text style={styles.pricePending}>Updating…</Text> : <Text style={styles.pricePending}>—</Text>) : <Text style={styles.value}>€{value.toFixed(2)}</Text>}
                 </View>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => navigate('CardDetail', { cardId: card.id })} hitSlop={10} accessibilityLabel={`View ${card.name}`}>

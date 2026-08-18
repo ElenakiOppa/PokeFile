@@ -17,7 +17,7 @@ export const MAIN_TAB_ROUTES = ITEMS.map((item) => item.route);
 export default function BottomNav({ activeRoute, onNavigate }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.shell, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.shell, { paddingBottom: insets.bottom }]}> 
       <View style={styles.bar}>
         {ITEMS.map((item) => {
           const active = activeRoute === item.route || (item.route === 'Search' && activeRoute === 'Scanner');
